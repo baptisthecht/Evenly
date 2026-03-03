@@ -1,6 +1,5 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 
 const PROTECTED_ROUTES = ["/dashboard", "/onboarding"];
 const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password"];
@@ -17,8 +16,11 @@ export default auth(async (req) => {
   // Strip port for comparison
   const hostWithoutPort = host.split(":")[0];
 
-  // Only route if not the main app host
+  // Only route if not the main app host and not localhost
+  const isLocal = hostWithoutPort === "localhost" || hostWithoutPort === "127.0.0.1";
+
   if (
+    !isLocal &&
     hostWithoutPort !== appHost &&
     hostWithoutPort !== `www.${baseDomain}` &&
     !hostWithoutPort.endsWith(`.${appHost}`)
