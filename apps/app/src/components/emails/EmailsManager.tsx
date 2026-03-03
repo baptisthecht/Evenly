@@ -73,6 +73,7 @@ export function EmailsManager({ org, event, isPro, automations, campaigns, buyer
           automations={automations}
           organizationId={org.id}
           eventId={event.id}
+          eventStatus={event.status}
         />
       )}
       {tab === "campaigns" && (

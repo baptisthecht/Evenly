@@ -2,17 +2,46 @@ import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Routes that require authentication
 const PROTECTED_ROUTES = ["/dashboard", "/onboarding"];
-
-// Routes that should redirect to dashboard if already logged in
 const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password"];
 
-export default auth((req) => {
+export default auth(async (req) => {
   const { pathname } = req.nextUrl;
   const session = req.auth;
+  const host = req.headers.get("host") ?? "";
 
-  // Protect dashboard routes
+  // ── Subdomain / custom domain routing ──────────────────────
+  const appHost = process.env.NEXT_PUBLIC_APP_HOST ?? "app.evenly.com";
+  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN ?? "evenly.com";
+
+  // Strip port for comparison
+  const hostWithoutPort = host.split(":")[0];
+
+  // Only route if not the main app host
+  if (
+    hostWithoutPort !== appHost &&
+    hostWithoutPort !== `www.${baseDomain}` &&
+    !hostWithoutPort.endsWith(`.${appHost}`)
+  ) {
+    // Check if it's a subdomain of evenly.com (e.g. mon-asso.evenly.com)
+    if (hostWithoutPort.endsWith(`.${baseDomain}`)) {
+      const subdomain = hostWithoutPort.replace(`.${baseDomain}`, "");
+      // Reserved subdomains handled separately
+      if (!["app", "scanner", "www"].includes(subdomain)) {
+        // Rewrite to public org/event page
+        const url = req.nextUrl.clone();
+        url.pathname = `/o/${subdomain}${pathname}`;
+        return NextResponse.rewrite(url);
+      }
+    } else {
+      // Custom domain — rewrite to custom domain handler
+      const url = req.nextUrl.clone();
+      url.pathname = `/cd/${hostWithoutPort}${pathname}`;
+      return NextResponse.rewrite(url);
+    }
+  }
+
+  // ── Auth guards ─────────────────────────────────────────────
   if (PROTECTED_ROUTES.some((route) => pathname.startsWith(route))) {
     if (!session?.user) {
       const loginUrl = new URL("/login", req.url);
@@ -21,7 +50,6 @@ export default auth((req) => {
     }
   }
 
-  // Redirect logged-in users away from auth pages
   if (AUTH_ROUTES.some((route) => pathname.startsWith(route))) {
     if (session?.user) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
@@ -32,7 +60,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|public).*)",
-  ],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|public).*)"],
 };

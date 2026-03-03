@@ -48,9 +48,10 @@ interface Props {
   automations: Automation[];
   organizationId: string;
   eventId: string;
+  eventStatus: string;
 }
 
-export function AutomationsPanel({ automations, organizationId, eventId }: Props) {
+export function AutomationsPanel({ automations, organizationId, eventId, eventStatus }: Props) {
   const [states, setStates] = useState<Record<string, boolean>>(
     Object.fromEntries(automations.map((a) => [a.id, a.enabled]))
   );
@@ -76,7 +77,9 @@ export function AutomationsPanel({ automations, organizationId, eventId }: Props
     return (
       <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
         <p className="text-gray-500 text-sm">
-          Publiez l&apos;événement pour activer les automatisations.
+          {eventStatus === "PUBLISHED"
+            ? "Chargement des automatisations..."
+            : "Publiez l'événement pour activer les automatisations."}
         </p>
       </div>
     );

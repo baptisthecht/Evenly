@@ -27,11 +27,33 @@ export default async function EmailsPage({
 
   const isPro = org.planId === "pro";
 
-  // Load automations (init if needed)
+  // Load automations — auto-init if event is published and none exist yet
   let automations = await db.emailAutomation.findMany({
     where: { eventId: event.id },
     orderBy: { type: "asc" },
   });
+
+  if (automations.length === 0 && event.status === "PUBLISHED") {
+    const defaultAutomations = [
+      { type: "REMINDER_J7" as const, enabled: true },
+      { type: "REMINDER_J1" as const, enabled: true },
+      { type: "REMINDER_J0" as const, enabled: true },
+      { type: "POST_EVENT" as const, enabled: false },
+      { type: "LAST_TICKETS" as const, enabled: false },
+    ];
+    await db.emailAutomation.createMany({
+      data: defaultAutomations.map((a) => ({
+        eventId: event.id,
+        type: a.type,
+        enabled: a.enabled,
+        content: {},
+      })),
+    });
+    automations = await db.emailAutomation.findMany({
+      where: { eventId: event.id },
+      orderBy: { type: "asc" },
+    });
+  }
 
   // Load campaigns
   const campaigns = await db.emailCampaign.findMany({
