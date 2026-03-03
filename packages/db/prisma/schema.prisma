@@ -1,0 +1,704 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────
+// AUTH
+// ─────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  avatarUrl     String?
+  emailVerified DateTime?
+  passwordHash  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts                Account[]
+  sessions                Session[]
+  organizationMemberships OrganizationMember[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  provider          String
+  providerAccountId String
+  accessToken       String?
+  refreshToken      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id                 String   @id @default(cuid())
+  userId             String
+  sessionToken       String   @unique
+  expires            DateTime
+  lastOrganizationId String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─────────────────────────────────────────
+// ORGANISATIONS & RÔLES
+// ─────────────────────────────────────────
+
+model Organization {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  logoUrl     String?
+  description String?
+  email       String?
+  timezone    String  @default("Europe/Paris")
+  type        OrgType @default(INDIVIDUAL)
+
+  planId               String    @default("free")
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  subscriptionStatus   SubStatus @default(INACTIVE)
+  subscriptionEndsAt   DateTime?
+  trialEndsAt          DateTime?
+
+  stripeAccountId     String?             @unique
+  stripeAccountStatus StripeAccountStatus @default(NOT_CONNECTED)
+
+  availableBalanceCents Int @default(0)
+  reservedBalanceCents  Int @default(0)
+
+  ticketsSoldThisMonth Int       @default(0)
+  quotaResetAt         DateTime?
+
+  subdomain          String?   @unique
+  previousSubdomain  String?
+  subdomainChangedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  plan          Plan                 @relation(fields: [planId], references: [id])
+  members       OrganizationMember[]
+  roles         Role[]
+  events        Event[]
+  customDomains CustomDomain[]
+  invitations   Invitation[]
+  payouts       Payout[]
+  reserves      Reserve[]
+  emailTemplates EmailTemplate[]
+  unsubscribes  EmailUnsubscribe[]
+}
+
+enum OrgType {
+  INDIVIDUAL
+  ASSOCIATION
+  COMPANY
+}
+
+enum SubStatus {
+  INACTIVE
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum StripeAccountStatus {
+  NOT_CONNECTED
+  PENDING
+  ACTIVE
+  RESTRICTED
+  RESTRICTED_SOON
+}
+
+model Plan {
+  id                   String  @id
+  name                 String
+  commissionRate       Float
+  monthlyFreeQuota     Int
+  monthlyPriceCents    Int
+  yearlyPriceCents     Int
+  stripePriceIdMonthly String?
+  stripePriceIdYearly  String?
+
+  organizations Organization[]
+}
+
+model Role {
+  id             String  @id @default(cuid())
+  organizationId String?
+  name           String
+  isSystem       Boolean @default(false)
+  permissions    Permission[]
+
+  organization Organization?       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members      OrganizationMember[]
+}
+
+enum Permission {
+  EVENTS_CREATE
+  EVENTS_EDIT
+  EVENTS_DELETE
+  EVENTS_PUBLISH
+  TICKETS_VIEW
+  TICKETS_REFUND
+  CHECKIN_SCAN
+  MEMBERS_INVITE
+  MEMBERS_REMOVE
+  MEMBERS_MANAGE_ROLES
+  FINANCE_VIEW
+  FINANCE_MANAGE
+  SETTINGS_EDIT
+  BILLING_MANAGE
+  ROLES_CREATE
+  ROLES_EDIT
+  ROLES_DELETE
+}
+
+model OrganizationMember {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  roleId         String
+  joinedAt       DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role         Role         @relation(fields: [roleId], references: [id])
+
+  @@unique([organizationId, userId])
+}
+
+model Invitation {
+  id             String           @id @default(cuid())
+  organizationId String
+  email          String
+  roleId         String
+  token          String           @unique @default(cuid())
+  status         InvitationStatus @default(PENDING)
+  expiresAt      DateTime
+  createdBy      String
+  createdAt      DateTime         @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  CANCELLED
+}
+
+// ─────────────────────────────────────────
+// ÉVÉNEMENTS
+// ─────────────────────────────────────────
+
+model Event {
+  id             String      @id @default(cuid())
+  organizationId String
+  slug           String
+  title          String
+  description    String?
+  bannerUrl      String?
+
+  status       EventStatus @default(DRAFT)
+  locationType LocationType
+
+  locationName    String?
+  locationAddress String?
+  locationLat     Float?
+  locationLng     Float?
+
+  streamUrl String?
+
+  startsAt DateTime
+  endsAt   DateTime?
+  timezone String
+
+  seatingType     SeatingType @default(FREE)
+  allowSeatChoice Boolean     @default(true)
+
+  primaryColor String?
+  accentColor  String?
+  visibility   EventVisibility @default(PUBLIC)
+
+  confirmationMessage String?
+
+  subdomain String? @unique
+
+  refundPolicy       RefundPolicy @default(ORGANIZER_DEFINED)
+  refundDeadlineDays Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization  Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ticketTypes   TicketType[]
+  orders        Order[]
+  promoCodes    PromoCode[]
+  seatingMap    SeatingMap?
+  customDomains CustomDomain[]
+  automations   EmailAutomation[]
+  campaigns     EmailCampaign[]
+  scannerLinks  ScannerLink[]
+
+  @@unique([organizationId, slug])
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  ENDED
+}
+
+enum LocationType {
+  PHYSICAL
+  ONLINE
+  HYBRID
+}
+
+enum SeatingType {
+  FREE
+  ASSIGNED
+}
+
+enum EventVisibility {
+  PUBLIC
+  UNLISTED
+}
+
+enum RefundPolicy {
+  NON_REFUNDABLE
+  ORGANIZER_DEFINED
+  ALWAYS_REFUNDABLE
+}
+
+// ─────────────────────────────────────────
+// PLAN DE SALLE
+// ─────────────────────────────────────────
+
+model SeatingMap {
+  id      String @id @default(cuid())
+  eventId String @unique
+
+  categories SeatingCategory[]
+  rows       SeatingRow[]
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model SeatingCategory {
+  id           String  @id @default(cuid())
+  seatingMapId String
+  name         String
+  color        String
+  ticketTypeId String?
+
+  seatingMap SeatingMap @relation(fields: [seatingMapId], references: [id], onDelete: Cascade)
+  seats      Seat[]
+}
+
+model SeatingRow {
+  id           String @id @default(cuid())
+  seatingMapId String
+  categoryId   String
+  name         String
+  sortOrder    Int
+
+  seatingMap SeatingMap @relation(fields: [seatingMapId], references: [id], onDelete: Cascade)
+  seats      Seat[]
+}
+
+model Seat {
+  id         String     @id @default(cuid())
+  rowId      String
+  categoryId String
+  label      String
+  status     SeatStatus @default(AVAILABLE)
+
+  row      SeatingRow      @relation(fields: [rowId], references: [id], onDelete: Cascade)
+  category SeatingCategory @relation(fields: [categoryId], references: [id])
+  ticket   Ticket?
+}
+
+enum SeatStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+  BLOCKED
+}
+
+// ─────────────────────────────────────────
+// TICKETS
+// ─────────────────────────────────────────
+
+model TicketType {
+  id          String @id @default(cuid())
+  eventId     String
+  name        String
+  description String?
+  priceCents  Int
+  currency    String @default("EUR")
+
+  quantity     Int?
+  quantitySold Int  @default(0)
+
+  status TicketTypeStatus @default(ACTIVE)
+
+  saleStartsAt DateTime?
+  saleEndsAt   DateTime?
+  minPerOrder  Int       @default(1)
+  maxPerOrder  Int       @default(10)
+  sortOrder    Int       @default(0)
+
+  isNominative Boolean  @default(false)
+  customFields Json?
+
+  seatingCategoryId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+enum TicketTypeStatus {
+  ACTIVE
+  HIDDEN
+  SOLD_OUT
+}
+
+model PromoCode {
+  id      String @id @default(cuid())
+  eventId String
+  code    String
+
+  type  PromoType
+  value Float
+
+  ticketTypeIds   String[]
+  maxUses         Int?
+  maxUsesPerEmail Int?
+  expiresAt       DateTime?
+  usedCount       Int      @default(0)
+  isActive        Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, code])
+}
+
+enum PromoType {
+  PERCENTAGE
+  FIXED
+  FREE
+}
+
+// ─────────────────────────────────────────
+// COMMANDES & BILLETS
+// ─────────────────────────────────────────
+
+model Order {
+  id      String @id @default(cuid())
+  eventId String
+
+  buyerEmail     String
+  buyerFirstName String
+  buyerLastName  String
+  buyerPhone     String?
+
+  userId String?
+
+  subtotalCents Int
+  discountCents Int    @default(0)
+  feesCents     Int
+  totalCents    Int
+  currency      String @default("EUR")
+
+  promoCodeId String?
+
+  stripePaymentIntentId   String? @unique
+  stripeCheckoutSessionId String? @unique
+
+  status OrderStatus @default(PENDING)
+
+  magicToken String @unique @default(cuid())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event          Event           @relation(fields: [eventId], references: [id])
+  items          OrderItem[]
+  tickets        Ticket[]
+  refundRequests RefundRequest[]
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+model OrderItem {
+  id           String @id @default(cuid())
+  orderId      String
+  ticketTypeId String
+  quantity     Int
+  unitPriceCents Int
+  customFields Json?
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Ticket {
+  id          String @id @default(cuid())
+  orderId     String
+  orderItemId String
+
+  qrCode String @unique @default(cuid())
+
+  holderFirstName String?
+  holderLastName  String?
+  holderEmail     String?
+  holderPhone     String?
+  customFields    Json?
+
+  seatId String? @unique
+
+  checkedIn   Boolean   @default(false)
+  checkedInAt DateTime?
+  checkedInBy String?
+
+  status TicketStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+
+  order Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  seat  Seat?  @relation(fields: [seatId], references: [id])
+}
+
+enum TicketStatus {
+  ACTIVE
+  USED
+  CANCELLED
+  REFUNDED
+}
+
+model RefundRequest {
+  id      String @id @default(cuid())
+  orderId String
+
+  ticketIds       String[]
+  reason          String?
+  status          RefundStatus @default(PENDING)
+  isOutOfDeadline Boolean      @default(false)
+
+  responseMessage String?
+  respondedAt     DateTime?
+  respondedBy     String?
+
+  createdAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+}
+
+enum RefundStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PROCESSED
+}
+
+// ─────────────────────────────────────────
+// PAIEMENTS & FINANCES
+// ─────────────────────────────────────────
+
+model Reserve {
+  id             String        @id @default(cuid())
+  organizationId String
+  orderId        String
+  amountCents    Int
+  releasesAt     DateTime
+  releasedAt     DateTime?
+  status         ReserveStatus @default(HELD)
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+}
+
+enum ReserveStatus {
+  HELD
+  RELEASED
+}
+
+model Payout {
+  id             String       @id @default(cuid())
+  organizationId String
+  amountCents    Int
+  stripePayoutId String?      @unique
+  status         PayoutStatus @default(PENDING)
+  requestedAt    DateTime     @default(now())
+  paidAt         DateTime?
+  failureReason  String?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+}
+
+enum PayoutStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+// ─────────────────────────────────────────
+// DOMAINES CUSTOM
+// ─────────────────────────────────────────
+
+model CustomDomain {
+  id             String       @id @default(cuid())
+  organizationId String
+  domain         String       @unique
+  scope          DomainScope  @default(ORGANIZATION)
+  eventId        String?
+  status         DomainStatus @default(PENDING)
+  sslStatus      SslStatus    @default(PENDING)
+  verifiedAt     DateTime?
+  lastCheckedAt  DateTime?
+  createdAt      DateTime     @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event        Event?       @relation(fields: [eventId], references: [id])
+}
+
+enum DomainScope {
+  ORGANIZATION
+  EVENT
+}
+
+enum DomainStatus {
+  PENDING
+  ACTIVE
+  ERROR
+}
+
+enum SslStatus {
+  PENDING
+  ACTIVE
+  ERROR
+}
+
+// ─────────────────────────────────────────
+// SCANNER CHECK-IN
+// ─────────────────────────────────────────
+
+model ScannerLink {
+  id         String    @id @default(cuid())
+  eventId    String
+  token      String    @unique @default(cuid())
+  label      String
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  lastUsedAt DateTime?
+  createdBy  String
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────
+// EMAIL MARKETING
+// ─────────────────────────────────────────
+
+model EmailTemplate {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  content        Json
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model EmailAutomation {
+  id         String         @id @default(cuid())
+  eventId    String
+  type       AutomationType
+  enabled    Boolean        @default(true)
+  content    Json
+  lastSentAt DateTime?
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+enum AutomationType {
+  REMINDER_J7
+  REMINDER_J1
+  REMINDER_J0
+  POST_EVENT
+  LAST_TICKETS
+}
+
+model EmailCampaign {
+  id             String         @id @default(cuid())
+  eventId        String
+  organizationId String
+  subject        String
+  content        Json
+  segment        Json
+  status         CampaignStatus @default(DRAFT)
+  scheduledAt    DateTime?
+  sentAt         DateTime?
+  recipientCount Int?
+
+  openCount        Int @default(0)
+  clickCount       Int @default(0)
+  unsubscribeCount Int @default(0)
+  bounceCount      Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  CANCELLED
+}
+
+model EmailUnsubscribe {
+  id             String   @id @default(cuid())
+  email          String
+  organizationId String?
+  eventId        String?
+  createdAt      DateTime @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id])
+
+  @@unique([email, organizationId, eventId])
+}
