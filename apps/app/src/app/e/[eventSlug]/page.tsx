@@ -1,0 +1,110 @@
+import { db } from "@evenly/db";
+import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import { EventPublicPage } from "@/components/public/EventPublicPage";
+
+interface Props {
+  params: Promise<{ eventSlug: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { eventSlug } = await params;
+  const event = await getEvent(eventSlug);
+  if (!event) return { title: "Événement introuvable" };
+
+  return {
+    title: event.title,
+    description: event.description?.replace(/<[^>]*>/g, "").slice(0, 160) ?? undefined,
+    openGraph: {
+      title: event.title,
+      description: event.description?.replace(/<[^>]*>/g, "").slice(0, 160) ?? undefined,
+      images: event.bannerUrl ? [event.bannerUrl] : [],
+    },
+  };
+}
+
+async function getEvent(slug: string) {
+  return db.event.findFirst({
+    where: {
+      slug,
+      status: "PUBLISHED",
+    },
+    include: {
+      organization: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          logoUrl: true,
+          stripeAccountStatus: true,
+        },
+      },
+      ticketTypes: {
+        where: { status: "ACTIVE" },
+        orderBy: { sortOrder: "asc" },
+      },
+    },
+  });
+}
+
+export default async function PublicEventPage({ params }: Props) {
+  const { eventSlug } = await params;
+  const event = await getEvent(eventSlug);
+
+  if (!event) notFound();
+
+  // Get other events from same org
+  const otherEvents = await db.event.findMany({
+    where: {
+      organizationId: event.organizationId,
+      status: "PUBLISHED",
+      id: { not: event.id },
+      startsAt: { gte: new Date() },
+    },
+    orderBy: { startsAt: "asc" },
+    take: 3,
+    select: { id: true, title: true, slug: true, startsAt: true, bannerUrl: true },
+  });
+
+  return (
+    <EventPublicPage
+      event={{
+        id: event.id,
+        title: event.title,
+        description: event.description,
+        bannerUrl: event.bannerUrl,
+        startsAt: event.startsAt.toISOString(),
+        endsAt: event.endsAt?.toISOString() ?? null,
+        timezone: event.timezone,
+        locationType: event.locationType,
+        locationName: event.locationName,
+        locationAddress: event.locationAddress,
+        refundPolicy: event.refundPolicy,
+        refundDeadlineDays: event.refundDeadlineDays,
+        confirmationMessage: event.confirmationMessage,
+        organization: event.organization,
+        ticketTypes: event.ticketTypes.map((tt) => ({
+          id: tt.id,
+          name: tt.name,
+          description: tt.description,
+          priceCents: tt.priceCents,
+          currency: tt.currency,
+          quantity: tt.quantity,
+          quantitySold: tt.quantitySold,
+          maxPerOrder: tt.maxPerOrder,
+          minPerOrder: tt.minPerOrder,
+          isNominative: tt.isNominative,
+          saleStartsAt: tt.saleStartsAt?.toISOString() ?? null,
+          saleEndsAt: tt.saleEndsAt?.toISOString() ?? null,
+        })),
+      }}
+      otherEvents={otherEvents.map((e) => ({
+        id: e.id,
+        title: e.title,
+        slug: e.slug,
+        startsAt: e.startsAt.toISOString(),
+        bannerUrl: e.bannerUrl,
+      }))}
+    />
+  );
+}

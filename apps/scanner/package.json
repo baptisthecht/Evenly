@@ -13,7 +13,9 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "web-haptics": "0.0.6",
-    "zxing-wasm": "^3.0.0"
+    "zxing-wasm": "^3.0.0",
+    "@evenly/db": "workspace:*",
+    "@evenly/core": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
