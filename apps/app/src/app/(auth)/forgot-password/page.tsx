@@ -3,7 +3,7 @@ import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Mot de passe oublié — Evenly",
+  title: "Mot de passe oublié — Evoly",
 };
 
 export default function ForgotPasswordPage() {

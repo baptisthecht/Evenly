@@ -1,10 +1,9 @@
 "use server";
 
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 import { auth } from "@/lib/auth";
 import { stripe } from "@/lib/stripe";
-import { requirePermission } from "@evenly/core/organizers";
-import { revalidatePath } from "next/cache";
+import { requirePermission } from "@evoly/core/organizers";
 
 // ─────────────────────────────────────────
 // ONBOARDING — Créer ou reprendre le compte Express

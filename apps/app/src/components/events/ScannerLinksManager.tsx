@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import type { ScannerLink } from "@evenly/db";
+import type { ScannerLink } from "@evoly/db";
 import { createScannerLinkAction, revokeScannerLinkAction } from "@/actions/scanner";
 
 interface Props {
@@ -52,7 +52,7 @@ export function ScannerLinksManager({ eventId, organizationId, scannerLinks: ini
       <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-gray-900">Liens bénévoles</h3>
-          <p className="text-xs text-gray-400">Accès scanner sans compte Evenly</p>
+          <p className="text-xs text-gray-400">Accès scanner sans compte Evoly</p>
         </div>
         {canManage && (
           <button

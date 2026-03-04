@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 import Link from "next/link";
 
 export default async function EventsPage({

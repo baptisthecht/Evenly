@@ -1,11 +1,10 @@
 "use server";
 
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 import { auth } from "@/lib/auth";
 import { stripe } from "@/lib/stripe";
-import { requirePermission } from "@evenly/core/organizers";
+import { requirePermission } from "@evoly/core/organizers";
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 
 // ─────────────────────────────────────────
 // PAYOUT — Demander un virement
@@ -47,7 +46,7 @@ export async function requestPayoutAction(organizationId: string, amountCents: n
   });
 
   try {
-    // Transfer from Evenly platform to Connect account
+    // Transfer from Evoly platform to Connect account
     const transfer = await stripe.transfers.create({
       amount: amountCents,
       currency: "eur",
@@ -98,7 +97,7 @@ export async function approveRefundAction(refundRequestId: string, organizationI
     try {
       await stripe.refunds.create({
         payment_intent: order.stripePaymentIntentId,
-        // Note: Evenly keeps its commission (only refund ticket amount minus fees)
+        // Note: Evoly keeps its commission (only refund ticket amount minus fees)
         amount: order.totalCents - order.feesCents,
       });
     } catch (err: any) {

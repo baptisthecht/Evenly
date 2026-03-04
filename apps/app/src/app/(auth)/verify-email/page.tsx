@@ -3,7 +3,7 @@ import { verifyEmailAction } from "@/actions/auth";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Vérification email — Evenly",
+  title: "Vérification email — Evoly",
 };
 
 export default async function VerifyEmailPage({

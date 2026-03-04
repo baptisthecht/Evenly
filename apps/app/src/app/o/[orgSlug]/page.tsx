@@ -1,4 +1,4 @@
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -113,7 +113,7 @@ export default async function OrgPublicPage({ params }: Props) {
 
         <p className="text-center text-xs text-gray-300 pt-4">
           Billetterie propulsée par{" "}
-          <a href="https://evenly.com" className="text-gray-400 hover:underline">evenly</a>
+          <a href="https://evoly.com" className="text-gray-400 hover:underline">evoly</a>
         </p>
       </div>
     </div>

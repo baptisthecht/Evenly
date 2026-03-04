@@ -1,4 +1,4 @@
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 import { notFound } from "next/navigation";
 import { generateQrDataUrl } from "@/lib/qrcode";
 
@@ -50,7 +50,7 @@ export default async function MagicTicketsPage({
       {/* Navbar */}
       <nav className="bg-white border-b border-gray-200 px-4 py-3">
         <div className="max-w-xl mx-auto flex items-center justify-between">
-          <span className="font-bold text-violet-600 text-lg">evenly</span>
+          <span className="font-bold text-violet-600 text-lg">evoly</span>
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-500">{event.organization.name}</span>
             <a
@@ -180,7 +180,7 @@ export default async function MagicTicketsPage({
         </div>
 
         <div className="text-center space-y-1 pb-4">
-          <p className="text-xs text-gray-400">Gardez cette page accessible pour le check-in · evenly.com</p>
+          <p className="text-xs text-gray-400">Gardez cette page accessible pour le check-in · evoly.com</p>
           <a href={`/refund/${magicToken}`} className="text-xs text-gray-400 hover:text-violet-600 transition-colors underline">
             Demander un remboursement
           </a>

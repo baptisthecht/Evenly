@@ -1,4 +1,4 @@
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 import { z } from "zod";
 
 export const createTicketTypeSchema = z.object({

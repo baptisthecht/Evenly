@@ -2,11 +2,11 @@
 
 import { useState, useTransition, useCallback } from "react";
 import {
-  checkSubdomainAvailabilityAction,
-  updateSubdomainAction,
-  addCustomDomainAction,
-  deleteCustomDomainAction,
-  verifyDomainDnsAction,
+    checkSubdomainAvailabilityAction,
+    updateSubdomainAction,
+    addCustomDomainAction,
+    deleteCustomDomainAction,
+    verifyDomainDnsAction,
 } from "@/actions/domains";
 
 interface CustomDomain {
@@ -81,7 +81,7 @@ export function DomainsManager({ org, customDomains: initialDomains }: Props) {
     startTransition(async () => {
       const result = await updateSubdomainAction(org.id, newSlug);
       if (result.error) { setError(result.error); return; }
-      setSuccess(`Sous-domaine mis à jour → ${result.newSlug}.evenly.com`);
+      setSuccess(`Sous-domaine mis à jour → ${result.newSlug}.evoly.com`);
       setTimeout(() => window.location.href = `/dashboard/${result.newSlug}/domains`, 1200);
     });
   }
@@ -127,8 +127,8 @@ export function DomainsManager({ org, customDomains: initialDomains }: Props) {
     });
   }
 
-  const BASE_DOMAIN = "evenly.com";
-  const CNAME_TARGET = process.env.NEXT_PUBLIC_CNAME_TARGET ?? "app.evenly.com";
+  const BASE_DOMAIN = "evoly.com";
+  const CNAME_TARGET = process.env.NEXT_PUBLIC_CNAME_TARGET ?? "app.evoly.com";
 
   const statusIcon = (status: string) => {
     if (status === "ACTIVE") return <span className="text-green-500">✅</span>;
@@ -151,7 +151,7 @@ export function DomainsManager({ org, customDomains: initialDomains }: Props) {
       {/* Sous-domaine org */}
       <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4">
         <div>
-          <h2 className="text-sm font-semibold text-gray-900">Sous-domaine Evenly</h2>
+          <h2 className="text-sm font-semibold text-gray-900">Sous-domaine Evoly</h2>
           <p className="text-xs text-gray-400 mt-0.5">Disponible sur tous les plans.</p>
         </div>
 
@@ -208,7 +208,7 @@ export function DomainsManager({ org, customDomains: initialDomains }: Props) {
                 <span className="text-xs bg-violet-100 text-violet-600 px-2 py-0.5 rounded-full font-medium">Pro</span>
               )}
             </h2>
-            <p className="text-xs text-gray-400 mt-0.5">Pointez votre propre domaine vers Evenly.</p>
+            <p className="text-xs text-gray-400 mt-0.5">Pointez votre propre domaine vers Evoly.</p>
           </div>
           {org.isPro && (
             <button

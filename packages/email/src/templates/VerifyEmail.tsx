@@ -1,15 +1,14 @@
 import * as React from "react";
 import {
-  Html,
-  Head,
-  Preview,
-  Body,
-  Container,
-  Section,
-  Text,
-  Button,
-  Hr,
-  Img,
+    Html,
+    Head,
+    Preview,
+    Body,
+    Container,
+    Section,
+    Text,
+    Button,
+    Hr
 } from "@react-email/components";
 
 interface VerifyEmailProps {
@@ -24,17 +23,17 @@ export function VerifyEmailTemplate({
   return (
     <Html>
       <Head />
-      <Preview>Vérifiez votre adresse email pour Evenly</Preview>
+      <Preview>Vérifiez votre adresse email pour Evoly</Preview>
       <Body style={body}>
         <Container style={container}>
           <Section style={logoSection}>
-            <Text style={logoText}>evenly</Text>
+            <Text style={logoText}>evoly</Text>
           </Section>
           <Section style={content}>
             <Text style={heading}>Vérifiez votre email</Text>
             <Text style={paragraph}>
               {userName ? `Bonjour ${userName},` : "Bonjour,"}{" "}
-              Merci de vous être inscrit sur Evenly. Cliquez sur le bouton
+              Merci de vous être inscrit sur Evoly. Cliquez sur le bouton
               ci-dessous pour vérifier votre adresse email.
             </Text>
             <Button href={verificationUrl} style={button}>
@@ -48,7 +47,7 @@ export function VerifyEmailTemplate({
           <Hr style={hr} />
           <Section>
             <Text style={footer}>
-              © 2025 Evenly. Fait avec ♥ en Belgique.
+              © 2025 Evoly. Fait avec ♥ en Belgique.
             </Text>
           </Section>
         </Container>

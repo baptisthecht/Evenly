@@ -122,11 +122,11 @@ export function OnboardingStep1Form({ userId }: { userId: string }) {
 
       <div className="space-y-1">
         <label htmlFor="slug" className="block text-sm font-medium text-gray-700">
-          Adresse Evenly
+          Adresse Evoly
         </label>
         <div className="flex items-center">
           <span className="flex-shrink-0 px-3 py-2 bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg text-sm text-gray-500">
-            evenly.com/
+            evoly.com/
           </span>
           <div className="relative flex-1">
             <input

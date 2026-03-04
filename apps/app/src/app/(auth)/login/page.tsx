@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { LoginForm } from "@/components/auth/LoginForm";
 
 export const metadata: Metadata = {
-  title: "Connexion — Evenly",
+  title: "Connexion — Evoly",
 };
 
 export default function LoginPage() {

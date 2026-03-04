@@ -1,12 +1,11 @@
 "use server";
 
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 import { auth } from "@/lib/auth";
-import { requirePermission } from "@evenly/core/organizers";
-import { generateUniqueEventSlug, slugify } from "@evenly/core/events";
+import { requirePermission } from "@evoly/core/organizers";
+import { generateUniqueEventSlug } from "@evoly/core/events";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 // ─────────────────────────────────────────
 // WIZARD — STEP 1 : INFOS DE BASE

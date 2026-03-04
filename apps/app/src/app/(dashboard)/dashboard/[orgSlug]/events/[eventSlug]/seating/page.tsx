@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 import { SeatingMapManager } from "@/components/events/SeatingMapManager";
 
 export default async function EventSeatingPage({

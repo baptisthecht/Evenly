@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 import { ScannerLinksManager } from "@/components/events/ScannerLinksManager";
 
 export default async function EventCheckinPage({

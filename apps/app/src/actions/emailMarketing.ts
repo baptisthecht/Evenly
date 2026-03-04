@@ -1,9 +1,8 @@
 "use server";
 
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 import { auth } from "@/lib/auth";
-import { requirePermission } from "@evenly/core/organizers";
-import { revalidatePath } from "next/cache";
+import { requirePermission } from "@evoly/core/organizers";
 import { z } from "zod";
 
 // ─────────────────────────────────────────

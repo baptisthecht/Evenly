@@ -1,15 +1,15 @@
 {
-  "name": "evenly",
+  "name": "evoly",
   "version": "0.0.1",
   "private": true,
   "packageManager": "pnpm@9.0.0",
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
-    "db:generate": "pnpm --filter @evenly/db generate",
-    "db:migrate": "pnpm --filter @evenly/db migrate:dev",
-    "db:push": "pnpm --filter @evenly/db db:push",
-    "db:studio": "pnpm --filter @evenly/db studio"
+    "db:generate": "pnpm --filter @evoly/db generate",
+    "db:migrate": "pnpm --filter @evoly/db migrate:dev",
+    "db:push": "pnpm --filter @evoly/db db:push",
+    "db:studio": "pnpm --filter @evoly/db studio"
   },
   "devDependencies": {
     "prettier": "^3.3.3",

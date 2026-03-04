@@ -1,8 +1,8 @@
 "use server";
 
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 import { auth } from "@/lib/auth";
-import { requirePermission } from "@evenly/core/organizers";
+import { requirePermission } from "@evoly/core/organizers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { dns } from "node:dns/promises";
@@ -10,7 +10,7 @@ import { dns } from "node:dns/promises";
 // Slugs réservés
 const RESERVED_SLUGS = new Set([
   "app", "api", "www", "scanner", "admin", "mail", "support",
-  "blog", "help", "docs", "status", "evenly", "billing", "login",
+  "blog", "help", "docs", "status", "evoly", "billing", "login",
 ]);
 
 // ─────────────────────────────────────────
@@ -142,7 +142,7 @@ export async function verifyDomainDnsAction(domainId: string, organizationId: st
   });
   if (!customDomain) return { error: "Domaine introuvable." };
 
-  const TARGET_CNAME = process.env.CNAME_TARGET ?? "app.evenly.com";
+  const TARGET_CNAME = process.env.CNAME_TARGET ?? "app.evoly.com";
 
   let isVerified = false;
   let dnsError: string | null = null;

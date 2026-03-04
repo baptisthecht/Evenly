@@ -26,10 +26,10 @@ export function Comparison() {
           <div className="grid grid-cols-4 border-b border-black/5">
             <div className="p-4 text-xs font-medium text-[var(--muted)]" />
             <div className="p-4 text-xs font-semibold text-[var(--ink)] text-center border-l border-black/5">
-              Evenly Free
+              Evoly Free
             </div>
             <div className="p-4 text-xs font-semibold text-[var(--violet)] text-center bg-[var(--violet-subtle)] border-l border-[var(--violet)]/20">
-              Evenly Pro
+              Evoly Pro
             </div>
             <div className="p-4 text-xs font-medium text-[var(--muted)] text-center border-l border-black/5 opacity-60">
               Eventbrite

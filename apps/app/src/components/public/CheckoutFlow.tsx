@@ -304,7 +304,7 @@ export function CheckoutFlow({ event, onBack, onSuccess }: Props) {
               )}
               {!isFreeOrder && (
                 <div className="flex justify-between text-gray-400 text-xs">
-                  <span>Commission Evenly</span>
+                  <span>Commission Evoly</span>
                   <span>~{(estimatedFees / 100).toFixed(2)}€</span>
                 </div>
               )}

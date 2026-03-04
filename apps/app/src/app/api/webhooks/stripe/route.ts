@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createNotification } from "@/lib/notifications";
 import { stripe } from "@/lib/stripe";
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 import { resend, FROM_EMAIL } from "@/lib/resend";
-import { OrderConfirmationEmail } from "@evenly/email";
+import { OrderConfirmationEmail } from "@evoly/email";
 import { render } from "@react-email/render";
 import crypto from "crypto";
 
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
             const sold = updatedOrg.ticketsSoldThisMonth + totalQty;
             const pct = quota > 0 ? (sold / quota) * 100 : 0;
             const prevPct = quota > 0 ? ((sold - totalQty) / quota) * 100 : 0;
-            const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evenly.com";
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.com";
 
             // Alert at 80% (first time crossing)
             if (prevPct < 80 && pct >= 80 && pct < 100) {
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
                 await resend.emails.send({
                   from: FROM_EMAIL,
                   to: member.user.email,
-                  subject: "⚠️ Quota Evenly : 80% atteint",
+                  subject: "⚠️ Quota Evoly : 80% atteint",
                   html: `<p>Bonjour ${member.user.name ?? ""},</p><p>Vous avez utilisé <strong>80%</strong> de votre quota mensuel (${sold}/${quota} tickets payants). Au-delà, une commission de ${(updatedOrg.plan.commissionRate * 100).toFixed(1)}% s'applique.</p><p><a href="${appUrl}/dashboard/${updatedOrg.slug}/billing">Passer au Pro pour réduire votre commission →</a></p>`,
                 }).catch(console.error);
               }
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
                 await resend.emails.send({
                   from: FROM_EMAIL,
                   to: member.user.email,
-                  subject: "🔴 Quota Evenly dépassé — commission activée",
+                  subject: "🔴 Quota Evoly dépassé — commission activée",
                   html: `<p>Bonjour ${member.user.name ?? ""},</p><p>Vous avez dépassé votre quota mensuel de ${quota} tickets gratuits. Une commission de <strong>${(updatedOrg.plan.commissionRate * 100).toFixed(1)}%</strong> s'applique maintenant sur chaque vente.</p><p><a href="${appUrl}/dashboard/${updatedOrg.slug}/billing">Gérer mon abonnement →</a></p>`,
                 }).catch(console.error);
               }
@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
 
           // Send confirmation email
           try {
-            const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evenly.com";
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.com";
             const html = await render(OrderConfirmationEmail({
               buyerName: `${order.buyerFirstName} ${order.buyerLastName}`,
               eventTitle: order.event.title,
@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
             }));
 
             await resend.emails.send({
-              from: "Evenly <noreply@evenly.com>",
+              from: "Evoly <noreply@evoly.com>",
               to: order.buyerEmail,
               subject: `🎟️ Vos billets pour ${order.event.title}`,
               html,

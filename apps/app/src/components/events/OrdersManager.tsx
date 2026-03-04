@@ -157,7 +157,7 @@ export function OrdersManager({ organizationId, canRefund, orders }: Props) {
                       <div className="flex flex-wrap gap-4 text-xs text-gray-500">
                         <span>CMD-{order.id.slice(-8).toUpperCase()}</span>
                         <span>{new Date(order.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
-                        <span>Frais Evenly : {(order.feesCents / 100).toFixed(2)}€</span>
+                        <span>Frais Evoly : {(order.feesCents / 100).toFixed(2)}€</span>
                       </div>
                       <div className="flex gap-2">
                         <a

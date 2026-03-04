@@ -1,9 +1,9 @@
 "use server";
 
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 import { auth } from "@/lib/auth";
-import { requirePermission } from "@evenly/core/organizers";
-import type { ScannerLink } from "@evenly/db";
+import { requirePermission } from "@evoly/core/organizers";
+import type { ScannerLink } from "@evoly/db";
 
 export async function createScannerLinkAction(
   eventId: string,

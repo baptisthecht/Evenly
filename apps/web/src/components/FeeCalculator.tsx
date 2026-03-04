@@ -14,11 +14,11 @@ export function FeeCalculator() {
     const revenue = tickets * price * 100; // in cents
     // Eventbrite: ~6.6% + 1.79€/ticket + 2.9% payment processing ≈ 9.5% + 1.79€/ticket
     const eb = Math.round(revenue * 0.095 + tickets * 179);
-    // Evenly Free: 30 free, rest at 5%
+    // Evoly Free: 30 free, rest at 5%
     const freeQuota = Math.min(tickets, 30);
     const paid = Math.max(0, tickets - 30);
     const free = Math.round(paid * price * 100 * 0.05);
-    // Evenly Pro: 150 free, rest at 2.5%, + 29€/month
+    // Evoly Pro: 150 free, rest at 2.5%, + 29€/month
     const paidPro = Math.max(0, tickets - 150);
     const pro = Math.round(paidPro * price * 100 * 0.025 + 2900);
 
@@ -70,13 +70,13 @@ export function FeeCalculator() {
             dim
           />
           <ResultCard
-            label="Evenly Free"
+            label="Evoly Free"
             fee={calc.free}
             highlight={true}
             badge={`−${calc.savingPct}%`}
           />
           <ResultCard
-            label="Evenly Pro"
+            label="Evoly Pro"
             fee={calc.pro}
             highlight={false}
             badge="Meilleur ROI"

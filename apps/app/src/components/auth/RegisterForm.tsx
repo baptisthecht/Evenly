@@ -169,11 +169,11 @@ export function RegisterForm() {
 
         <p className="text-xs text-gray-400 text-center">
           En créant un compte, vous acceptez nos{" "}
-          <a href="https://evenly.com/cgu" className="underline hover:text-gray-600">
+          <a href="https://evoly.com/cgu" className="underline hover:text-gray-600">
             CGU
           </a>{" "}
           et notre{" "}
-          <a href="https://evenly.com/privacy" className="underline hover:text-gray-600">
+          <a href="https://evoly.com/privacy" className="underline hover:text-gray-600">
             politique de confidentialité
           </a>
           .
