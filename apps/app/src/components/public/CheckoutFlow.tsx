@@ -38,7 +38,7 @@ interface PromoResult {
 interface Props {
   event: EventData;
   onBack: () => void;
-  onSuccess: (magicToken: string) => void;
+  onSuccess: (orderId: string, magicToken: string) => void;
 }
 
 export function CheckoutFlow({ event, onBack, onSuccess }: Props) {
@@ -156,7 +156,7 @@ export function CheckoutFlow({ event, onBack, onSuccess }: Props) {
       });
 
       if (result.error) { setError(result.error); return; }
-      if (result.magicToken) onSuccess(result.magicToken);
+      if (result.orderId && result.magicToken) onSuccess(result.orderId, result.magicToken);
     });
   }
 

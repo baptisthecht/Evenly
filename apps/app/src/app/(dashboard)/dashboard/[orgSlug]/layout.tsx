@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@evenly/db";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
+import { NotificationBell } from "@/components/dashboard/NotificationBell";
 
 export default async function DashboardLayout({
   children,
@@ -55,9 +56,15 @@ export default async function DashboardLayout({
         userPermissions={membership.role.permissions}
         user={user!}
       />
-      <main className="flex-1 overflow-y-auto">
-        {children}
-      </main>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top bar with notification bell */}
+        <div className="h-12 bg-white border-b border-gray-100 flex items-center justify-end px-4 flex-shrink-0">
+          <NotificationBell orgSlug={orgSlug} />
+        </div>
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

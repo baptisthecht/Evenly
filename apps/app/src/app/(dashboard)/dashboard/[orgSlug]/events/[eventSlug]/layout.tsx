@@ -41,6 +41,7 @@ export default async function EventLayout({
   const tabs = [
     { href: `/dashboard/${orgSlug}/events/${eventSlug}`, label: "Aperçu", exact: true },
     { href: `/dashboard/${orgSlug}/events/${eventSlug}/tickets`, label: "Tickets" },
+    ...(event.seatingType === "ASSIGNED" ? [{ href: `/dashboard/${orgSlug}/events/${eventSlug}/seating`, label: "Plan de salle" }] : []),
     { href: `/dashboard/${orgSlug}/events/${eventSlug}/orders`, label: "Commandes" },
     { href: `/dashboard/${orgSlug}/events/${eventSlug}/checkin`, label: "Check-in" },
     { href: `/dashboard/${orgSlug}/events/${eventSlug}/promo`, label: "Codes promo" },

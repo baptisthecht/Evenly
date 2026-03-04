@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { SalesChart } from "@/components/dashboard/SalesChart";
 import { redirect } from "next/navigation";
 import { db } from "@evenly/db";
 
@@ -70,6 +71,22 @@ export default async function DashboardHomePage({
   });
   const checkinRate = totalTickets > 0 ? Math.round((checkedIn / totalTickets) * 100) : 0;
 
+  // Build per-day chart data (30 days)
+  const chartData: { date: string; revenue: number; tickets: number }[] = [];
+  for (let i = 29; i >= 0; i--) {
+    const day = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+    const dayStr = day.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
+    const dayOrders = recentOrders.filter(o => {
+      const d = new Date(o.createdAt);
+      return d.getDate() === day.getDate() && d.getMonth() === day.getMonth() && d.getFullYear() === day.getFullYear();
+    });
+    chartData.push({
+      date: dayStr,
+      revenue: Math.round(dayOrders.reduce((s, o) => s + (o.totalCents - o.feesCents), 0)) / 100,
+      tickets: dayOrders.reduce((s, o) => s + o.tickets.length, 0),
+    });
+  }
+
   // Quota display
   const quotaUsed = org.ticketsSoldThisMonth;
   const quotaTotal = org.plan.monthlyFreeQuota;
@@ -140,6 +157,9 @@ export default async function DashboardHomePage({
           value={`${checkinRate}%`}
         />
       </div>
+
+      {/* Sales chart */}
+      <SalesChart data={chartData} />
 
       {/* Quota bar */}
       <div className="bg-white rounded-xl border border-gray-200 p-5">

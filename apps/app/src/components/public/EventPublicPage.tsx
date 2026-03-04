@@ -49,7 +49,7 @@ interface Props {
 
 export function EventPublicPage({ event, otherEvents }: Props) {
   const [showCheckout, setShowCheckout] = useState(false);
-  const [orderComplete, setOrderComplete] = useState<{ magicToken: string } | null>(null);
+  const [orderComplete, setOrderComplete] = useState<{ orderId: string; magicToken: string } | null>(null);
 
   const startDate = new Date(event.startsAt);
   const endDate = event.endsAt ? new Date(event.endsAt) : null;
@@ -69,7 +69,11 @@ export function EventPublicPage({ event, otherEvents }: Props) {
   const hasPaidTickets = event.ticketTypes.some((tt) => tt.priceCents > 0);
   const canBuy = hasAvailableTickets && (stripeConnected || !hasPaidTickets);
 
+  // Redirect to dedicated confirmation page after purchase
   if (orderComplete) {
+    if (typeof window !== "undefined") {
+      window.location.href = `/confirmation/${orderComplete.orderId}`;
+    }
     return <OrderConfirmation magicToken={orderComplete.magicToken} event={event} />;
   }
 
@@ -192,7 +196,7 @@ export function EventPublicPage({ event, otherEvents }: Props) {
                 <CheckoutFlow
                   event={event}
                   onBack={() => setShowCheckout(false)}
-                  onSuccess={(magicToken) => setOrderComplete({ magicToken })}
+                  onSuccess={(orderId, magicToken) => setOrderComplete({ orderId, magicToken })}
                 />
               ) : (
                 <TicketSelector

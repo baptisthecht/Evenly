@@ -1,5 +1,6 @@
 import { db } from "@evenly/db";
 import { notFound } from "next/navigation";
+import { generateQrDataUrl } from "@/lib/qrcode";
 
 export default async function MagicTicketsPage({
   params,
@@ -23,9 +24,8 @@ export default async function MagicTicketsPage({
         },
       },
       tickets: {
-        include: {
-          order: { select: { buyerFirstName: true, buyerLastName: true } },
-        },
+        where: { status: { in: ["ACTIVE", "USED"] } },
+        include: { seat: true },
       },
       items: true,
     },
@@ -35,13 +35,33 @@ export default async function MagicTicketsPage({
 
   const event = order.event;
 
+  // Generate real QR codes server-side
+  const ticketsWithQr = await Promise.all(
+    order.tickets.map(async (ticket) => ({
+      ...ticket,
+      qrDataUrl: await generateQrDataUrl(ticket.qrCode),
+    }))
+  );
+
+  const pdfUrl = `/api/tickets/pdf?token=${magicToken}`;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navbar */}
       <nav className="bg-white border-b border-gray-200 px-4 py-3">
         <div className="max-w-xl mx-auto flex items-center justify-between">
           <span className="font-bold text-violet-600 text-lg">evenly</span>
-          <span className="text-sm text-gray-500">{event.organization.name}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-500">{event.organization.name}</span>
+            <a
+              href={`${pdfUrl}&print=1`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs px-3 py-1.5 bg-violet-600 text-white rounded-full hover:bg-violet-700 transition-colors"
+            >
+              📄 Imprimer / PDF
+            </a>
+          </div>
         </div>
       </nav>
 
@@ -68,7 +88,7 @@ export default async function MagicTicketsPage({
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-900">Commande #{order.id.slice(-8).toUpperCase()}</h2>
             <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">
-              {order.status === "COMPLETED" ? "Confirmée" : order.status}
+              Confirmée
             </span>
           </div>
           <p className="text-sm text-gray-600">
@@ -81,81 +101,91 @@ export default async function MagicTicketsPage({
 
         {/* Tickets */}
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-gray-900 px-1">
-            {order.tickets.length} billet{order.tickets.length > 1 ? "s" : ""}
-          </h2>
-          {order.tickets.map((ticket, i) => {
-            const item = order.items.find(() => true); // simplified
-            return (
-              <div key={ticket.id} className="bg-white rounded-2xl border border-gray-200 p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-medium text-violet-600 uppercase tracking-wide">
-                      Billet {i + 1}
-                    </p>
-                    <p className="text-base font-bold text-gray-900 mt-0.5">
-                      {ticket.holderFirstName ?? order.buyerFirstName}{" "}
-                      {ticket.holderLastName ?? order.buyerLastName}
-                    </p>
-                    {ticket.holderEmail && (
-                      <p className="text-xs text-gray-400 mt-0.5">{ticket.holderEmail}</p>
-                    )}
-                    <div className="mt-3 flex items-center gap-2">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        ticket.checkedIn ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"
-                      }`}>
-                        {ticket.checkedIn ? "✓ Scanné" : "Valide"}
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-sm font-semibold text-gray-900">
+              {ticketsWithQr.length} billet{ticketsWithQr.length > 1 ? "s" : ""}
+            </h2>
+            <a
+              href={pdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-violet-600 hover:underline"
+            >
+              Télécharger tous les PDF →
+            </a>
+          </div>
+
+          {ticketsWithQr.map((ticket, i) => (
+            <div key={ticket.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              {/* Ticket header */}
+              <div className="bg-violet-600 px-5 py-3 flex items-center justify-between">
+                <span className="text-xs font-semibold text-white/80 uppercase tracking-wide">
+                  Billet {i + 1}{ticketsWithQr.length > 1 ? ` / ${ticketsWithQr.length}` : ""}
+                </span>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                  ticket.checkedIn
+                    ? "bg-white/20 text-white"
+                    : "bg-green-400/20 text-green-200"
+                }`}>
+                  {ticket.checkedIn ? "✓ Utilisé" : "✓ Valide"}
+                </span>
+              </div>
+
+              <div className="p-5 flex items-start gap-4">
+                <div className="flex-1">
+                  <p className="text-base font-bold text-gray-900">
+                    {ticket.holderFirstName ?? order.buyerFirstName}{" "}
+                    {ticket.holderLastName ?? order.buyerLastName}
+                  </p>
+                  {ticket.holderEmail && (
+                    <p className="text-xs text-gray-400 mt-0.5">{ticket.holderEmail}</p>
+                  )}
+                  {ticket.seat && (
+                    <div className="mt-2">
+                      <span className="text-xs font-semibold text-violet-600 bg-violet-50 px-2 py-1 rounded-lg">
+                        📍 Place {ticket.seat.label}
                       </span>
                     </div>
-                  </div>
-
-                  {/* QR Code placeholder */}
-                  <div className="flex-shrink-0">
-                    <QRDisplay value={ticket.qrCode} />
+                  )}
+                  <div className="mt-3">
+                    <a
+                      href={`${pdfUrl}&ticketId=${ticket.id}&print=1`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-gray-400 hover:text-violet-600 transition-colors"
+                    >
+                      📄 PDF individuel
+                    </a>
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-gray-100">
-                  <p className="text-xs text-gray-400 font-mono">{ticket.qrCode}</p>
+                {/* Real QR Code */}
+                <div className="flex-shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={ticket.qrDataUrl}
+                    alt={`QR Code billet ${i + 1}`}
+                    width={100}
+                    height={100}
+                    className="rounded-lg border border-gray-100"
+                  />
                 </div>
               </div>
-            );
-          })}
+
+              <div className="px-5 pb-4">
+                <p className="text-[10px] text-gray-300 font-mono break-all">{ticket.qrCode}</p>
+              </div>
+            </div>
+          ))}
         </div>
 
-        <p className="text-center text-xs text-gray-400 pb-4">
-          Gardez cette page accessible pour le check-in · evenly.com
-        </p>
+        <div className="text-center space-y-1 pb-4">
+          <p className="text-xs text-gray-400">Gardez cette page accessible pour le check-in · evenly.com</p>
+          <a href={`/refund/${magicToken}`} className="text-xs text-gray-400 hover:text-violet-600 transition-colors underline">
+            Demander un remboursement
+          </a>
+        </div>
       </div>
-    </div>
-  );
-}
-
-// Simple SVG QR code placeholder — Phase 5 will use real QR generation
-function QRDisplay({ value }: { value: string }) {
-  return (
-    <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center border border-gray-200">
-      <svg className="w-12 h-12 text-gray-800" viewBox="0 0 100 100" fill="currentColor">
-        {/* Simple QR-like pattern */}
-        <rect x="10" y="10" width="30" height="30" rx="3" />
-        <rect x="60" y="10" width="30" height="30" rx="3" />
-        <rect x="10" y="60" width="30" height="30" rx="3" />
-        <rect x="15" y="15" width="20" height="20" rx="1" fill="white" />
-        <rect x="65" y="15" width="20" height="20" rx="1" fill="white" />
-        <rect x="15" y="65" width="20" height="20" rx="1" fill="white" />
-        <rect x="20" y="20" width="10" height="10" />
-        <rect x="70" y="20" width="10" height="10" />
-        <rect x="20" y="70" width="10" height="10" />
-        {/* Center dots */}
-        <rect x="60" y="60" width="8" height="8" />
-        <rect x="72" y="60" width="8" height="8" />
-        <rect x="84" y="60" width="8" height="8" />
-        <rect x="60" y="72" width="8" height="8" />
-        <rect x="84" y="72" width="8" height="8" />
-        <rect x="60" y="84" width="8" height="8" />
-        <rect x="72" y="84" width="8" height="8" />
-        <rect x="84" y="84" width="8" height="8" />
-      </svg>
     </div>
   );
 }

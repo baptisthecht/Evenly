@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createNotification } from "@/lib/notifications";
 import { stripe } from "@/lib/stripe";
 import { db } from "@evenly/db";
-import { resend } from "@/lib/resend";
+import { resend, FROM_EMAIL } from "@/lib/resend";
 import { OrderConfirmationEmail } from "@evenly/email";
 import { render } from "@react-email/render";
 import crypto from "crypto";
@@ -75,6 +76,44 @@ export async function POST(req: NextRequest) {
             data: { ticketsSoldThisMonth: { increment: totalQty } },
           });
 
+          // Check quota alerts (80% and 100%)
+          const updatedOrg = await tx.organization.findUnique({
+            where: { id: order.event.organizationId },
+            include: { plan: true, members: { where: { role: { permissions: { has: "BILLING_MANAGE" } } }, include: { user: { select: { email: true, name: true } } } } },
+          });
+          if (updatedOrg) {
+            const quota = updatedOrg.plan.monthlyFreeQuota;
+            const sold = updatedOrg.ticketsSoldThisMonth + totalQty;
+            const pct = quota > 0 ? (sold / quota) * 100 : 0;
+            const prevPct = quota > 0 ? ((sold - totalQty) / quota) * 100 : 0;
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evenly.com";
+
+            // Alert at 80% (first time crossing)
+            if (prevPct < 80 && pct >= 80 && pct < 100) {
+              for (const member of updatedOrg.members) {
+                if (!member.user.email) continue;
+                await resend.emails.send({
+                  from: FROM_EMAIL,
+                  to: member.user.email,
+                  subject: "⚠️ Quota Evenly : 80% atteint",
+                  html: `<p>Bonjour ${member.user.name ?? ""},</p><p>Vous avez utilisé <strong>80%</strong> de votre quota mensuel (${sold}/${quota} tickets payants). Au-delà, une commission de ${(updatedOrg.plan.commissionRate * 100).toFixed(1)}% s'applique.</p><p><a href="${appUrl}/dashboard/${updatedOrg.slug}/billing">Passer au Pro pour réduire votre commission →</a></p>`,
+                }).catch(console.error);
+              }
+            }
+            // Alert at 100% (first time crossing)
+            if (prevPct < 100 && pct >= 100) {
+              for (const member of updatedOrg.members) {
+                if (!member.user.email) continue;
+                await resend.emails.send({
+                  from: FROM_EMAIL,
+                  to: member.user.email,
+                  subject: "🔴 Quota Evenly dépassé — commission activée",
+                  html: `<p>Bonjour ${member.user.name ?? ""},</p><p>Vous avez dépassé votre quota mensuel de ${quota} tickets gratuits. Une commission de <strong>${(updatedOrg.plan.commissionRate * 100).toFixed(1)}%</strong> s'applique maintenant sur chaque vente.</p><p><a href="${appUrl}/dashboard/${updatedOrg.slug}/billing">Gérer mon abonnement →</a></p>`,
+                }).catch(console.error);
+              }
+            }
+          }
+
           // Create reserve (20% / 30 jours)
           const reserveAmount = Math.round(order.totalCents * 0.2);
           const availableAmount = order.totalCents - order.feesCents - reserveAmount;
@@ -114,7 +153,19 @@ export async function POST(req: NextRequest) {
             });
           } catch (emailErr) {
             console.error("[Confirmation email error]", emailErr);
-          }{
+          }
+
+          // In-app notification: new order
+          await createNotification({
+            organizationId: order.event.organizationId,
+            type: "NEW_ORDER",
+            title: "Nouvelle commande",
+            message: `${order.buyerFirstName} ${order.buyerLastName} a acheté ${order.items.reduce((a, i) => a + i.quantity, 0)} billet(s) pour ${order.event.title}`,
+            link: `/dashboard/${order.event.organization.slug}/events/${order.event.slug}/orders`,
+          });
+
+          // Credit available balance (total - commission - reserve)
+          await tx.organization.update({
             where: { id: order.event.organizationId },
             data: { availableBalanceCents: { increment: Math.max(0, availableAmount) } },
           });

@@ -66,8 +66,50 @@ export default async function PublicEventPage({ params }: Props) {
     select: { id: true, title: true, slug: true, startsAt: true, bannerUrl: true },
   });
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evenly.com";
+
+  // JSON-LD structured data for SEO
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: event.title,
+    startDate: event.startsAt.toISOString(),
+    endDate: event.endsAt?.toISOString(),
+    description: event.description?.replace(/<[^>]*>/g, "").slice(0, 500),
+    image: event.bannerUrl,
+    url: `${appUrl}/e/${event.slug}`,
+    organizer: {
+      "@type": "Organization",
+      name: event.organization.name,
+    },
+    ...(event.locationType === "PHYSICAL" && event.locationName ? {
+      location: {
+        "@type": "Place",
+        name: event.locationName,
+        address: event.locationAddress ?? undefined,
+      },
+    } : event.locationType === "ONLINE" ? {
+      location: { "@type": "VirtualLocation", url: appUrl },
+    } : {}),
+    offers: event.ticketTypes.map((tt) => ({
+      "@type": "Offer",
+      name: tt.name,
+      price: (tt.priceCents / 100).toFixed(2),
+      priceCurrency: tt.currency,
+      availability: tt.quantity && tt.quantitySold >= tt.quantity
+        ? "https://schema.org/SoldOut"
+        : "https://schema.org/InStock",
+      url: `${appUrl}/e/${event.slug}`,
+    })),
+  };
+
   return (
-    <EventPublicPage
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <EventPublicPage
       event={{
         id: event.id,
         title: event.title,
@@ -106,5 +148,5 @@ export default async function PublicEventPage({ params }: Props) {
         bannerUrl: e.bannerUrl,
       }))}
     />
-  );
-}
+    </>
+  );}
