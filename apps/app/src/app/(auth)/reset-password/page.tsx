@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
 import Link from "next/link";
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 
 export const metadata: Metadata = {
-  title: "Nouveau mot de passe — Evenly",
+  title: "Nouveau mot de passe — Evoly",
 };
 
 export default async function ResetPasswordPage({

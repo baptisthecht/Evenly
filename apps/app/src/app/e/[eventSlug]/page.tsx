@@ -1,4 +1,4 @@
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { EventPublicPage } from "@/components/public/EventPublicPage";
@@ -66,7 +66,7 @@ export default async function PublicEventPage({ params }: Props) {
     select: { id: true, title: true, slug: true, startsAt: true, bannerUrl: true },
   });
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evenly.com";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.com";
 
   // JSON-LD structured data for SEO
   const jsonLd = {

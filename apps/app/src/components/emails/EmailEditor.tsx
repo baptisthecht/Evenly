@@ -260,7 +260,7 @@ function EmailPreview({ blocks }: { blocks: Block[] }) {
         return null;
       })}
       <div className="pt-4 border-t border-gray-200 text-xs text-gray-400 text-center">
-        Se désinscrire · Envoyé via Evenly
+        Se désinscrire · Envoyé via Evoly
       </div>
     </div>
   );

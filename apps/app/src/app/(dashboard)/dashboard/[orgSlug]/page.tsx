@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { SalesChart } from "@/components/dashboard/SalesChart";
 import { redirect } from "next/navigation";
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 
 export default async function DashboardHomePage({
   params,

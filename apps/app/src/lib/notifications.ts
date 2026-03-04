@@ -1,4 +1,4 @@
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 
 type NotificationType =
   | "NEW_ORDER"

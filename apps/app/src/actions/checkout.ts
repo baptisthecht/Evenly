@@ -1,9 +1,9 @@
 "use server";
 
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 import { z } from "zod";
 import { resend } from "@/lib/resend";
-import { OrderConfirmationEmail } from "@evenly/email";
+import { OrderConfirmationEmail } from "@evoly/email";
 import { render } from "@react-email/components";
 import crypto from "crypto";
 
@@ -149,7 +149,7 @@ async function sendOrderConfirmationEmail(
   confirmationMessage: string | null
 ) {
   try {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evenly.com";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.com";
     const html = await render(OrderConfirmationEmail({
       buyerName,
       eventTitle,
@@ -165,7 +165,7 @@ async function sendOrderConfirmationEmail(
       confirmationMessage,
     }));
     await resend.emails.send({
-      from: "Evenly <noreply@evenly.com>",
+      from: "Evoly <noreply@evoly.com>",
       to: buyerEmail,
       subject: `🎟️ Vos billets pour ${eventTitle}`,
       html,

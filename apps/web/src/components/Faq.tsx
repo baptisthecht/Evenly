@@ -9,7 +9,7 @@ const faqs = [
   },
   {
     q: "Les tickets gratuits sont-ils vraiment sans commission ?",
-    a: "Oui, sans exception. Aucun frais fixe, aucun don pré-coché, aucune surprise. Si votre événement est 100% gratuit, Evenly ne vous prend rien.",
+    a: "Oui, sans exception. Aucun frais fixe, aucun don pré-coché, aucune surprise. Si votre événement est 100% gratuit, Evoly ne vous prend rien.",
   },
   {
     q: "Quand est-ce que je reçois mon argent ?",
@@ -28,12 +28,12 @@ const faqs = [
     a: "Dashboard → Domaines → Ajouter. Vous recevez les instructions CNAME pour votre registrar (OVH, Cloudflare, Namecheap, Gandi…). SSL automatique dès validation DNS.",
   },
   {
-    q: "Evenly est-il conforme au RGPD ?",
+    q: "Evoly est-il conforme au RGPD ?",
     a: "Oui. Données hébergées en Union Européenne. Pas de revente de données, pas de publicité. Gestion des désinscriptions emails intégrée.",
   },
   {
     q: "Quelle différence avec HelloAsso ?",
-    a: "HelloAsso est réservé aux associations françaises et repose sur un modèle de don volontaire pré-coché (~20% de vos acheteurs paient). Evenly est ouvert à tous, sans don pré-coché, avec des frais explicites.",
+    a: "HelloAsso est réservé aux associations françaises et repose sur un modèle de don volontaire pré-coché (~20% de vos acheteurs paient). Evoly est ouvert à tous, sans don pré-coché, avec des frais explicites.",
   },
   {
     q: "Comment fonctionne le check-in QR ?",
@@ -41,7 +41,7 @@ const faqs = [
   },
   {
     q: "Que se passe-t-il si j'annule un événement ?",
-    a: "Tous les acheteurs sont remboursés automatiquement via Stripe. Evenly garde sa commission (standard industrie, comme Stripe ne rembourse pas ses frais). Un email est envoyé automatiquement à tous les acheteurs.",
+    a: "Tous les acheteurs sont remboursés automatiquement via Stripe. Evoly garde sa commission (standard industrie, comme Stripe ne rembourse pas ses frais). Un email est envoyé automatiquement à tous les acheteurs.",
   },
 ];
 

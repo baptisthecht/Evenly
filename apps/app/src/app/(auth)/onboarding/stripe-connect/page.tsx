@@ -53,7 +53,7 @@ export default async function OnboardingStripeConnectPage() {
         <ul className="space-y-2 mb-6">
           {[
             "Vos revenus sont virés directement sur votre compte bancaire",
-            "Commission Evenly prélevée automatiquement à la source",
+            "Commission Evoly prélevée automatiquement à la source",
             "Stripe gère la sécurité et la conformité PCI DSS",
             "Configuration en moins de 5 minutes",
           ].map((item) => (

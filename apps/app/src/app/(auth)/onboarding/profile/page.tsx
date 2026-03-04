@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 import { OnboardingStep1Form } from "@/components/auth/OnboardingStep1Form";
 
 export default async function OnboardingProfilePage() {

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 
 export const metadata: Metadata = {
-  title: "Créer un compte — Evenly",
+  title: "Créer un compte — Evoly",
 };
 
 export default function RegisterPage() {

@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://evenly.com";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://evoly.com";
   const now = new Date();
 
   return [

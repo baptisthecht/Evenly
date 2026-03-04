@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import type { Organization, Permission } from "@evenly/db";
+import type { Organization, Permission } from "@evoly/db";
 
 interface DashboardSidebarProps {
   currentOrg: Organization & { plan: { name: string } };

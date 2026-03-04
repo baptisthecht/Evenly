@@ -1,4 +1,4 @@
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 
 // Reserved slugs that cannot be used as subdomains/org slugs
 export const RESERVED_SLUGS = [
@@ -13,7 +13,7 @@ export const RESERVED_SLUGS = [
   "help",
   "docs",
   "status",
-  "evenly",
+  "evoly",
   "auth",
   "login",
   "register",

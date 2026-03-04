@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createNotification } from "@/lib/notifications";
 import { stripe } from "@/lib/stripe";
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 import { resend, FROM_EMAIL } from "@/lib/resend";
-import { OrderConfirmationEmail } from "@evenly/email";
+import { OrderConfirmationEmail } from "@evoly/email";
 import { render } from "@react-email/components";
 import crypto from "crypto";
 

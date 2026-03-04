@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 import { TicketsManager } from "@/components/events/TicketsManager";
 
 export default async function EventTicketsPage({

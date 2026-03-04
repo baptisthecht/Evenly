@@ -1,8 +1,8 @@
 "use server";
 
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 import { auth } from "@/lib/auth";
-import { requirePermission } from "@evenly/core/organizers";
+import { requirePermission } from "@evoly/core/organizers";
 import { revalidatePath } from "next/cache";
 import { stripe } from "@/lib/stripe";
 import { createNotification } from "@/lib/notifications";
@@ -129,7 +129,7 @@ export async function approveRefundAction(
         <p>Votre demande de remboursement pour <strong>${order.event.title}</strong> a été approuvée.</p>
         ${responseMessage ? `<p>Message de l'organisateur : ${responseMessage}</p>` : ""}
         <p>Le remboursement apparaîtra sur votre compte bancaire sous 5-10 jours ouvrés.</p>
-        <p style="font-size:12px;color:#9ca3af">Les frais de commission Evenly et Stripe ne sont pas remboursés.</p>`,
+        <p style="font-size:12px;color:#9ca3af">Les frais de commission Evoly et Stripe ne sont pas remboursés.</p>`,
     });
   } catch (e) {
     console.error("[approveRefundAction] Email error:", e);

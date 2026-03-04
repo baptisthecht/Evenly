@@ -2,12 +2,12 @@
 
 import { useState, useTransition } from "react";
 import {
-  createTicketTypeAction,
-  updateTicketTypeAction,
-  hideTicketTypeAction,
-  deleteTicketTypeAction,
+    createTicketTypeAction,
+    updateTicketTypeAction,
+    hideTicketTypeAction,
+    deleteTicketTypeAction,
 } from "@/actions/tickets";
-import type { TicketType } from "@evenly/db";
+import type { TicketType } from "@evoly/db";
 
 interface Props {
   event: { id: string; status: string };

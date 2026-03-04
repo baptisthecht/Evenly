@@ -1,16 +1,13 @@
 "use server";
 
-import { db } from "@evenly/db";
-import { registerSchema, onboardingStep1Schema, onboardingStep2Schema } from "@evenly/core/auth";
-import { RESERVED_SLUGS } from "@evenly/core/billing";
+import { db } from "@evoly/db";
+import { registerSchema, onboardingStep1Schema, onboardingStep2Schema } from "@evoly/core/auth";
+import { RESERVED_SLUGS } from "@evoly/core/billing";
 import bcrypt from "bcryptjs";
 import { resend, FROM_EMAIL } from "@/lib/resend";
-import { VerifyEmailTemplate } from "@evenly/email";
-import { ResetPasswordTemplate } from "@evenly/email";
+import { VerifyEmailTemplate } from "@evoly/email";
+import { ResetPasswordTemplate } from "@evoly/email";
 import { render } from "@react-email/render";
-import { signIn } from "@/lib/auth";
-import { AuthError } from "next-auth";
-import { redirect } from "next/navigation";
 import crypto from "crypto";
 
 // ─────────────────────────────────────────
@@ -70,7 +67,7 @@ export async function registerAction(formData: FormData) {
   await resend.emails.send({
     from: FROM_EMAIL,
     to: email,
-    subject: "Vérifiez votre adresse email — Evenly",
+    subject: "Vérifiez votre adresse email — Evoly",
     html,
   });
 
@@ -141,7 +138,7 @@ export async function forgotPasswordAction(formData: FormData) {
   await resend.emails.send({
     from: FROM_EMAIL,
     to: email,
-    subject: "Réinitialiser votre mot de passe — Evenly",
+    subject: "Réinitialiser votre mot de passe — Evoly",
     html,
   });
 

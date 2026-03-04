@@ -1,4 +1,4 @@
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 import { notFound } from "next/navigation";
 import { redirect } from "next/navigation";
 

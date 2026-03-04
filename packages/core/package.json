@@ -1,5 +1,5 @@
 {
-  "name": "@evenly/core",
+  "name": "@evoly/core",
   "version": "0.0.1",
   "private": true,
   "exports": {
@@ -11,7 +11,7 @@
     "./auth": "./src/auth/index.ts"
   },
   "dependencies": {
-    "@evenly/db": "workspace:*",
+    "@evoly/db": "workspace:*",
     "zod": "^4.3.6"
   },
   "devDependencies": {

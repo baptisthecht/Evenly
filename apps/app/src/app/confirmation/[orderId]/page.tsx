@@ -1,6 +1,5 @@
-import { db } from "@evenly/db";
+import { db } from "@evoly/db";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { generateQrDataUrl } from "@/lib/qrcode";
 
 export default async function ConfirmationPage({
@@ -33,7 +32,7 @@ export default async function ConfirmationPage({
   if (!order) notFound();
 
   const event = order.event;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evenly.com";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.com";
 
   // Generate QR for first ticket preview
   const firstTicketQr = order.tickets[0]
@@ -51,7 +50,7 @@ export default async function ConfirmationPage({
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-4">
         <div className="max-w-lg mx-auto flex items-center justify-between">
-          <span className="font-bold text-violet-600 text-lg">evenly</span>
+          <span className="font-bold text-violet-600 text-lg">evoly</span>
           <span className="text-sm text-gray-500">{event.organization.name}</span>
         </div>
       </div>

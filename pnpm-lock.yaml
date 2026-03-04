@@ -23,16 +23,16 @@ importers:
       '@auth/prisma-adapter':
         specifier: ^2.11.1
         version: 2.11.1(@prisma/client@7.4.2(prisma@5.22.0)(typescript@5.9.3))
-      '@evenly/core':
+      '@evoly/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@evenly/db':
+      '@evoly/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@evenly/email':
+      '@evoly/email':
         specifier: workspace:*
         version: link:../../packages/email
-      '@evenly/ui':
+      '@evoly/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       '@react-email/components':
@@ -120,10 +120,10 @@ importers:
 
   apps/scanner:
     dependencies:
-      '@evenly/core':
+      '@evoly/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@evenly/db':
+      '@evoly/db':
         specifier: workspace:*
         version: link:../../packages/db
       next:
@@ -211,7 +211,7 @@ importers:
 
   packages/core:
     dependencies:
-      '@evenly/db':
+      '@evoly/db':
         specifier: workspace:*
         version: link:../db
       zod:
