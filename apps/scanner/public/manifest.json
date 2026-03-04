@@ -1,7 +1,7 @@
 {
-  "name": "Evoly Scanner",
+  "name": "Evenly Scanner",
   "short_name": "Scanner",
-  "description": "Scanner de billets Evoly",
+  "description": "Scanner de billets Evenly",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",

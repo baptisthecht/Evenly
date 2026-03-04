@@ -3,8 +3,8 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
-import { db } from "@evoly/db";
-import { loginSchema } from "@evoly/core/auth";
+import { db } from "@evenly/db";
+import { loginSchema } from "@evenly/core/auth";
 
 // NextAuth/PrismaAdapter envoie `image` mais notre schéma utilise `avatarUrl`.
 // On surcharge createUser et updateUser pour faire le mapping.

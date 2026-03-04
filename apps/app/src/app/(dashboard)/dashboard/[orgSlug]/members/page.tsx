@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { db } from "@evoly/db";
+import { db } from "@evenly/db";
 import { MembersManager } from "@/components/members/MembersManager";
 
 export default async function MembersPage({

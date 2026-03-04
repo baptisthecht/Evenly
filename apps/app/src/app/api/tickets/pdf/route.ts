@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@evoly/db";
+import { db } from "@evenly/db";
 import { generateQrDataUrl } from "@/lib/qrcode";
 
 export const runtime = "nodejs";
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
   });
 
   const isPro = event.organization.planId === "pro";
-  const brandName = isPro ? event.organization.name : "Evoly";
+  const brandName = isPro ? event.organization.name : "Evenly";
   const brandColor = (event as any).primaryColor ?? "#7c3aed";
 
   const html = `<!DOCTYPE html>

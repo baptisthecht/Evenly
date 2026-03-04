@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createNotification } from "@/lib/notifications";
 import { stripe } from "@/lib/stripe";
-import { db } from "@evoly/db";
+import { db } from "@evenly/db";
 import { resend, FROM_EMAIL } from "@/lib/resend";
-import { OrderConfirmationEmail } from "@evoly/email";
-import { render } from "@react-email/render";
+import { OrderConfirmationEmail } from "@evenly/email";
+import { render } from "@react-email/components";
 import crypto from "crypto";
 
 export const runtime = "nodejs";
@@ -33,14 +33,13 @@ export async function POST(req: NextRequest) {
         const order = await db.order.findFirst({
           where: { stripePaymentIntentId: pi.id },
           include: {
-            items: { include: { ticketType: true } },
+            items: true,
             event: { include: { organization: true } },
           },
         });
         if (!order || order.status === "COMPLETED") break;
 
         await db.$transaction(async (tx) => {
-          // Complete order
           await tx.order.update({
             where: { id: order.id },
             data: { status: "COMPLETED" },
@@ -61,34 +60,37 @@ export async function POST(req: NextRequest) {
                 },
               });
             }
-
-            // Decrement stock permanently
             await tx.ticketType.update({
               where: { id: item.ticketTypeId },
               data: { quantitySold: { increment: item.quantity } },
             });
           }
 
-          // Increment quota
-          const totalQty = order.items.reduce((a, i) => a + i.quantity, 0);
+          // Quota
+          const totalQty = order.items.reduce((a: number, i) => a + i.quantity, 0);
           await tx.organization.update({
             where: { id: order.event.organizationId },
             data: { ticketsSoldThisMonth: { increment: totalQty } },
           });
 
-          // Check quota alerts (80% and 100%)
+          // Quota alerts
           const updatedOrg = await tx.organization.findUnique({
             where: { id: order.event.organizationId },
-            include: { plan: true, members: { where: { role: { permissions: { has: "BILLING_MANAGE" } } }, include: { user: { select: { email: true, name: true } } } } },
+            include: {
+              plan: true,
+              members: {
+                where: { role: { permissions: { has: "BILLING_MANAGE" } } },
+                include: { user: { select: { email: true, name: true } } },
+              },
+            },
           });
           if (updatedOrg) {
             const quota = updatedOrg.plan.monthlyFreeQuota;
             const sold = updatedOrg.ticketsSoldThisMonth + totalQty;
             const pct = quota > 0 ? (sold / quota) * 100 : 0;
             const prevPct = quota > 0 ? ((sold - totalQty) / quota) * 100 : 0;
-            const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.com";
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.me";
 
-            // Alert at 80% (first time crossing)
             if (prevPct < 80 && pct >= 80 && pct < 100) {
               for (const member of updatedOrg.members) {
                 if (!member.user.email) continue;
@@ -96,11 +98,10 @@ export async function POST(req: NextRequest) {
                   from: FROM_EMAIL,
                   to: member.user.email,
                   subject: "⚠️ Quota Evoly : 80% atteint",
-                  html: `<p>Bonjour ${member.user.name ?? ""},</p><p>Vous avez utilisé <strong>80%</strong> de votre quota mensuel (${sold}/${quota} tickets payants). Au-delà, une commission de ${(updatedOrg.plan.commissionRate * 100).toFixed(1)}% s'applique.</p><p><a href="${appUrl}/dashboard/${updatedOrg.slug}/billing">Passer au Pro pour réduire votre commission →</a></p>`,
+                  html: `<p>Bonjour ${member.user.name ?? ""},</p><p>Vous avez utilisé <strong>80%</strong> de votre quota mensuel (${sold}/${quota} tickets payants). Au-delà, une commission de ${(updatedOrg.plan.commissionRate * 100).toFixed(1)}% s'applique.</p><p><a href="${appUrl}/dashboard/${updatedOrg.slug}/billing">Passer au Pro →</a></p>`,
                 }).catch(console.error);
               }
             }
-            // Alert at 100% (first time crossing)
             if (prevPct < 100 && pct >= 100) {
               for (const member of updatedOrg.members) {
                 if (!member.user.email) continue;
@@ -114,7 +115,7 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          // Create reserve (20% / 30 jours)
+          // Reserve 20%
           const reserveAmount = Math.round(order.totalCents * 0.2);
           const availableAmount = order.totalCents - order.feesCents - reserveAmount;
 
@@ -127,9 +128,10 @@ export async function POST(req: NextRequest) {
             },
           });
 
-          // Send confirmation email
+          // Confirmation email
           try {
-            const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.com";
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.me";
+            const ticketCount = order.items.reduce((a: number, i) => a + i.quantity, 0);
             const html = await render(OrderConfirmationEmail({
               buyerName: `${order.buyerFirstName} ${order.buyerLastName}`,
               eventTitle: order.event.title,
@@ -138,15 +140,14 @@ export async function POST(req: NextRequest) {
                 hour: "2-digit", minute: "2-digit",
               }),
               eventLocation: order.event.locationName ?? null,
-              ticketCount: order.items.reduce((a, i) => a + i.quantity, 0),
+              ticketCount,
               totalCents: order.totalCents,
               magicToken: order.magicToken,
               appUrl,
               confirmationMessage: order.event.confirmationMessage ?? null,
             }));
-
             await resend.emails.send({
-              from: "Evoly <noreply@evoly.com>",
+              from: FROM_EMAIL,
               to: order.buyerEmail,
               subject: `🎟️ Vos billets pour ${order.event.title}`,
               html,
@@ -155,16 +156,17 @@ export async function POST(req: NextRequest) {
             console.error("[Confirmation email error]", emailErr);
           }
 
-          // In-app notification: new order
+          // In-app notification
+          const notifQty = order.items.reduce((a: number, i) => a + i.quantity, 0);
           await createNotification({
             organizationId: order.event.organizationId,
             type: "NEW_ORDER",
             title: "Nouvelle commande",
-            message: `${order.buyerFirstName} ${order.buyerLastName} a acheté ${order.items.reduce((a, i) => a + i.quantity, 0)} billet(s) pour ${order.event.title}`,
+            message: `${order.buyerFirstName} ${order.buyerLastName} a acheté ${notifQty} billet(s) pour ${order.event.title}`,
             link: `/dashboard/${order.event.organization.slug}/events/${order.event.slug}/orders`,
           });
 
-          // Credit available balance (total - commission - reserve)
+          // Credit balance
           await tx.organization.update({
             where: { id: order.event.organizationId },
             data: { availableBalanceCents: { increment: Math.max(0, availableAmount) } },
@@ -231,7 +233,6 @@ export async function POST(req: NextRequest) {
           data: {
             planId: "pro",
             subscriptionStatus: "ACTIVE",
-            // Reset monthly quota on renewal
             ticketsSoldThisMonth: 0,
             quotaResetAt: new Date(),
           },
@@ -328,29 +329,33 @@ export async function POST(req: NextRequest) {
         break;
       }
 
-      case "transfer.paid": {
-        const transfer = event.data.object as any;
+      // transfer.paid / transfer.failed ne sont pas des event types Stripe standard
+      // On utilise payout.paid / payout.failed à la place
+      case "payout.paid": {
+        const payout = event.data.object as any;
         await db.payout.updateMany({
-          where: { stripePayoutId: transfer.id },
+          where: { stripePayoutId: payout.id },
           data: { status: "PAID", paidAt: new Date() },
         });
         break;
       }
 
-      case "transfer.failed": {
-        const transfer = event.data.object as any;
-        const payout = await db.payout.findFirst({
-          where: { stripePayoutId: transfer.id },
+      case "payout.failed": {
+        const payout = event.data.object as any;
+        const dbPayout = await db.payout.findFirst({
+          where: { stripePayoutId: payout.id },
         });
-        if (payout) {
+        if (dbPayout) {
           await db.payout.update({
-            where: { id: payout.id },
-            data: { status: "FAILED", failureReason: transfer.failure_message ?? "Échec du virement" },
+            where: { id: dbPayout.id },
+            data: {
+              status: "FAILED",
+              failureReason: payout.failure_message ?? "Échec du virement",
+            },
           });
-          // Recréditer le solde
           await db.organization.update({
-            where: { id: payout.organizationId },
-            data: { availableBalanceCents: { increment: payout.amountCents } },
+            where: { id: dbPayout.organizationId },
+            data: { availableBalanceCents: { increment: dbPayout.amountCents } },
           });
         }
         break;

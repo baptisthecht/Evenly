@@ -69,7 +69,7 @@ export function OnboardingStripeStep({ organizationId, orgSlug, stripeStatus }: 
 
       {/* Info box */}
       <div className="p-3 bg-blue-50 rounded-xl text-xs text-blue-700">
-        <p>Vos fonds arrivent directement sur votre compte bancaire. Evoly prélève sa commission automatiquement.</p>
+        <p>Vos fonds arrivent directement sur votre compte bancaire. Evenly prélève sa commission automatiquement.</p>
       </div>
 
       <div className="space-y-2">

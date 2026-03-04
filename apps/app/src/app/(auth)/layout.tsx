@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Evoly",
+  title: "Evenly",
 };
 
 export default function AuthLayout({
@@ -14,10 +14,10 @@ export default function AuthLayout({
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <a
-            href="https://evoly.com"
+            href="https://evenly.com"
             className="text-2xl font-bold text-violet-600 tracking-tight"
           >
-            evoly
+            evenly
           </a>
         </div>
         {children}

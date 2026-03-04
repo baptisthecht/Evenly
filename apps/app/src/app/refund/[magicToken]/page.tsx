@@ -1,4 +1,4 @@
-import { db } from "@evoly/db";
+import { db } from "@evenly/db";
 import { notFound } from "next/navigation";
 import { RefundRequestForm } from "./RefundRequestForm";
 
@@ -63,7 +63,7 @@ export default async function RefundPage({
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white border-b border-gray-200 px-4 py-3">
         <div className="max-w-lg mx-auto flex items-center justify-between">
-          <span className="font-bold text-violet-600 text-lg">evoly</span>
+          <span className="font-bold text-violet-600 text-lg">evenly</span>
           <span className="text-sm text-gray-500">{event.organization.name}</span>
         </div>
       </nav>

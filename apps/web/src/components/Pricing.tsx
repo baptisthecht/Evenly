@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.com";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evenly.com";
 
 export function Pricing() {
   const [yearly, setYearly] = useState(false);
@@ -56,7 +56,7 @@ export function Pricing() {
                 "0% tickets gratuits (∞)",
                 "30 tickets payants offerts/mois",
                 "5% au-delà du quota",
-                "Sous-domaine Evoly inclus",
+                "Sous-domaine Evenly inclus",
                 "QR Check-in inclus",
                 "Emails transactionnels",
               ].map((f) => (
@@ -123,7 +123,7 @@ export function Pricing() {
 
         {/* Transparency note */}
         <p className="text-center text-xs text-[var(--muted)] mt-6 max-w-sm mx-auto leading-relaxed">
-          Evoly affiche toujours sa commission à l&apos;organisateur <em>et</em> à l&apos;acheteur avant paiement. Aucune surprise.
+          Evenly affiche toujours sa commission à l&apos;organisateur <em>et</em> à l&apos;acheteur avant paiement. Aucune surprise.
         </p>
       </div>
     </section>

@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { db } from "@evoly/db";
+import { db } from "@evenly/db";
 import { PromoCodesManager } from "@/components/events/PromoCodesManager";
 
 export default async function EventPromoPage({

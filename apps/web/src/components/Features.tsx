@@ -1,4 +1,4 @@
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.com";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evenly.com";
 
 const features = [
   {
@@ -32,7 +32,7 @@ const features = [
           <span className="text-sm font-bold text-[var(--green)]">0,00€</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-sm text-[var(--muted)]">Commission Evoly</span>
+          <span className="text-sm text-[var(--muted)]">Commission Evenly</span>
           <span className="text-sm font-bold text-[var(--green)]">0,00€</span>
         </div>
         <div className="border-t border-black/5 pt-3 flex items-center justify-between">
@@ -93,7 +93,7 @@ const features = [
     visual: (
       <div className="bg-white rounded-2xl border border-black/8 p-5 shadow-sm space-y-3">
         {[
-          { domain: "mon-asso.evoly.com", status: "✅ Actif", plan: "Free" },
+          { domain: "mon-asso.evenly.com", status: "✅ Actif", plan: "Free" },
           { domain: "tickets.monsite.com", status: "✅ SSL actif", plan: "Pro" },
         ].map((d) => (
           <div key={d.domain} className="space-y-0.5">

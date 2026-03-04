@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { db } from "@evoly/db";
+import { db } from "@evenly/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

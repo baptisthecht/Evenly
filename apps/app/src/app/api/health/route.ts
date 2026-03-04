@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@evoly/db";
+import { db } from "@evenly/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

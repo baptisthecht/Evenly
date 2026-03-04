@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@evoly/db";
+import { db } from "@evenly/db";
 
 export async function POST(req: NextRequest) {
   const { qrCode, token } = await req.json();

@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Evoly Scanner",
-  description: "Scanner de billets Evoly",
+  title: "Evenly Scanner",
+  description: "Scanner de billets Evenly",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

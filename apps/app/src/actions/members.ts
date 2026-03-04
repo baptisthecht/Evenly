@@ -1,8 +1,8 @@
 "use server";
 
-import { db } from "@evoly/db";
+import { db } from "@evenly/db";
 import { auth } from "@/lib/auth";
-import { requirePermission } from "@evoly/core/organizers";
+import { requirePermission } from "@evenly/core/organizers";
 import { revalidatePath } from "next/cache";
 import { resend, FROM_EMAIL } from "@/lib/resend";
 import { z } from "zod";
@@ -61,17 +61,17 @@ export async function inviteMemberAction(
     },
   });
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.com";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evenly.com";
   const inviteUrl = `${appUrl}/invite/${invitation.token}`;
 
   try {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
-      subject: `Invitation à rejoindre ${org.name} sur Evoly`,
+      subject: `Invitation à rejoindre ${org.name} sur Evenly`,
       html: `
         <p>Bonjour,</p>
-        <p>Vous avez été invité(e) à rejoindre l'organisation <strong>${org.name}</strong> sur Evoly.</p>
+        <p>Vous avez été invité(e) à rejoindre l'organisation <strong>${org.name}</strong> sur Evenly.</p>
         <p>Cette invitation expire dans 48 heures.</p>
         <p><a href="${inviteUrl}" style="background:#7c3aed;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;display:inline-block">
           Accepter l'invitation →
@@ -122,13 +122,13 @@ export async function resendInvitationAction(invitationId: string, organizationI
     data: { expiresAt: newExpiry, token: newToken, status: "PENDING" },
   });
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.com";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evenly.com";
   try {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: invitation.email,
       subject: `Rappel — Invitation à rejoindre ${invitation.organization.name}`,
-      html: `<p>Votre invitation à rejoindre <strong>${invitation.organization.name}</strong> sur Evoly est toujours valide.</p>
+      html: `<p>Votre invitation à rejoindre <strong>${invitation.organization.name}</strong> sur Evenly est toujours valide.</p>
         <p><a href="${appUrl}/invite/${newToken}">Accepter l'invitation →</a></p>`,
     });
   } catch (e) {

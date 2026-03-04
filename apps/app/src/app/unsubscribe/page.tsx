@@ -1,4 +1,4 @@
-import { db } from "@evoly/db";
+import { db } from "@evenly/db";
 import { UnsubscribeForm } from "./UnsubscribeForm";
 
 export default async function UnsubscribePage({
@@ -27,7 +27,7 @@ export default async function UnsubscribePage({
               ? `Emails pour « ${eventTitle} »`
               : orgName
               ? `Emails de ${orgName}`
-              : "Tous les emails marketing Evoly"}
+              : "Tous les emails marketing Evenly"}
           </p>
         </div>
         <UnsubscribeForm

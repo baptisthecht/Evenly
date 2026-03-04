@@ -1,9 +1,10 @@
 "use server";
 
-import { db } from "@evoly/db";
+import { db } from "@evenly/db";
 import { auth } from "@/lib/auth";
 import { stripe } from "@/lib/stripe";
-import { requirePermission } from "@evoly/core/organizers";
+import { requirePermission } from "@evenly/core/organizers";
+import { revalidatePath } from "next/cache";
 
 // ─────────────────────────────────────────
 // UPGRADE TO PRO — Stripe Checkout

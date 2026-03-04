@@ -1,4 +1,4 @@
-import { db } from "@evoly/db";
+import { db } from "@evenly/db";
 import { notFound } from "next/navigation";
 import { ScannerApp } from "@/components/ScannerApp";
 

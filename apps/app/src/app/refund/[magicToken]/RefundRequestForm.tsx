@@ -114,7 +114,7 @@ export function RefundRequestForm({
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <div className="bg-blue-50 rounded-xl p-3 text-xs text-blue-700">
-            La commission Evoly et les frais Stripe ne sont pas remboursés (standard industrie).
+            La commission Evenly et les frais Stripe ne sont pas remboursés (standard industrie).
           </div>
 
           <button onClick={handleSubmit} disabled={isPending || selected.length === 0}

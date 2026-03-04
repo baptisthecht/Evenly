@@ -1,8 +1,9 @@
 "use server";
 
-import { db } from "@evoly/db";
+import { db } from "@evenly/db";
 import { auth } from "@/lib/auth";
-import { requirePermission } from "@evoly/core/organizers";
+import { requirePermission } from "@evenly/core/organizers";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 // ─────────────────────────────────────────
@@ -276,10 +277,12 @@ export async function unsubscribeAction(
   organizationId?: string,
   eventId?: string
 ) {
+  const orgId = organizationId ?? null;
+  const evId = eventId ?? null;
   await db.emailUnsubscribe.upsert({
-    where: { email_organizationId_eventId: { email, organizationId: organizationId ?? null, eventId: eventId ?? null } },
-    create: { email, organizationId: organizationId ?? null, eventId: eventId ?? null },
+    where: { email_organizationId_eventId: { email, organizationId: orgId as string, eventId: evId as string } },
+    create: { email, organizationId: orgId, eventId: evId },
     update: {},
   });
-  return { success: true };
+  return { success: true, error: null };
 }

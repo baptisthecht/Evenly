@@ -1,6 +1,6 @@
 import * as React from "react";
 import {
-    Html, Head, Preview, Body, Container, Section, Text, Button, Hr, Heading,
+  Html, Head, Preview, Body, Container, Section, Text, Button, Hr, Heading,
 } from "@react-email/components";
 
 interface OrderConfirmationEmailProps {
@@ -23,7 +23,7 @@ export function OrderConfirmationEmail({
   ticketCount,
   totalCents,
   magicToken,
-  appUrl = "https://app.evoly.com",
+  appUrl = "https://app.evenly.com",
   confirmationMessage,
 }: OrderConfirmationEmailProps) {
   const ticketsUrl = `${appUrl}/tickets/${magicToken}`;
@@ -39,7 +39,7 @@ export function OrderConfirmationEmail({
           {/* Logo */}
           <Section style={{ textAlign: "center", padding: "32px 0 24px" }}>
             <Text style={{ fontSize: 22, fontWeight: 700, color: "#7c3aed", margin: 0 }}>
-              evoly
+              evenly
             </Text>
           </Section>
 
@@ -99,7 +99,7 @@ export function OrderConfirmationEmail({
                 Se désinscrire des emails marketing
               </a>
             </Text>
-            <Text style={{ ...footer, fontSize: 11 }}>© Evoly · La billetterie honnête</Text>
+            <Text style={{ ...footer, fontSize: 11 }}>© Evenly · La billetterie honnête</Text>
           </Section>
         </Container>
       </Body>

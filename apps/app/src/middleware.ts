@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 const PROTECTED_ROUTES = ["/dashboard", "/onboarding"];
 const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password"];
@@ -10,8 +11,8 @@ export default auth(async (req) => {
   const host = req.headers.get("host") ?? "";
 
   // ── Subdomain / custom domain routing ──────────────────────
-  const appHost = process.env.NEXT_PUBLIC_APP_HOST ?? "app.evoly.com";
-  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN ?? "evoly.com";
+  const appHost = process.env.NEXT_PUBLIC_APP_HOST ?? "app.evenly.com";
+  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN ?? "evenly.com";
 
   // Strip port for comparison
   const hostWithoutPort = host.split(":")[0];
@@ -25,7 +26,7 @@ export default auth(async (req) => {
     hostWithoutPort !== `www.${baseDomain}` &&
     !hostWithoutPort.endsWith(`.${appHost}`)
   ) {
-    // Check if it's a subdomain of evoly.com (e.g. mon-asso.evoly.com)
+    // Check if it's a subdomain of evenly.com (e.g. mon-asso.evenly.com)
     if (hostWithoutPort.endsWith(`.${baseDomain}`)) {
       const subdomain = hostWithoutPort.replace(`.${baseDomain}`, "");
       // Reserved subdomains handled separately

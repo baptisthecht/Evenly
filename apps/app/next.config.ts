@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@evoly/ui", "@evoly/core", "@evoly/db", "@evoly/email"],
+  transpilePackages: ["@evenly/ui", "@evenly/core", "@evenly/db", "@evenly/email"],
   images: {
     remotePatterns: [
       {

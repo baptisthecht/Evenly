@@ -1,4 +1,4 @@
-import { db } from "@evoly/db";
+import { db } from "@evenly/db";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { acceptInvitationAction } from "@/actions/members";
@@ -60,7 +60,7 @@ export default async function InvitePage({
             Rejoindre {invitation.organization.name}
           </h1>
           <p className="text-sm text-gray-500">
-            Vous avez été invité(e) à rejoindre cette organisation sur Evoly.
+            Vous avez été invité(e) à rejoindre cette organisation sur Evenly.
           </p>
           <div className="flex flex-col gap-2">
             <a

@@ -10,8 +10,8 @@ const geist = Geist({
 
 export const metadata: Metadata = {
   title: {
-    default: "Evoly — La billetterie honnête",
-    template: "%s — Evoly",
+    default: "Evenly — La billetterie honnête",
+    template: "%s — Evenly",
   },
   description:
     "Créez et vendez des billets pour vos événements. Zéro commission sur les tickets gratuits. Transparent, simple, honnête.",

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.com";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evenly.com";
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
@@ -12,7 +13,7 @@ export function Navbar() {
       <nav className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
         {/* Logo */}
         <a href="#" className="font-display text-xl text-[var(--ink)] tracking-tight">
-          evoly
+          evenly
         </a>
 
         {/* Desktop links */}

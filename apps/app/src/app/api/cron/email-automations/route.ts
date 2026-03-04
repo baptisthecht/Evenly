@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@evoly/db";
+import { db } from "@evenly/db";
 import { resend, FROM_EMAIL } from "@/lib/resend";
 
 export const runtime = "nodejs";
@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
       });
 
       let emailsSent = 0;
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.com";
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evenly.com";
 
       for (const order of orders) {
         // Check unsubscribe
@@ -161,7 +161,7 @@ export async function GET(req: NextRequest) {
     });
 
     let emailsSent = 0;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.com";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evenly.com";
 
     for (const order of orders) {
       try {
@@ -216,7 +216,7 @@ export async function GET(req: NextRequest) {
     });
 
     let emailsSent = 0;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.com";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evenly.com";
 
     for (const order of orders) {
       const unsub = await db.emailUnsubscribe.findFirst({
@@ -275,7 +275,7 @@ function buildReminderHtml({
   return `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;background:#f9fafb;margin:0;padding:24px">
     <div style="max-width:520px;margin:0 auto;background:white;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb">
       <div style="background:#7c3aed;padding:24px 32px">
-        <p style="color:white;font-size:22px;font-weight:700;margin:0">evoly</p>
+        <p style="color:white;font-size:22px;font-weight:700;margin:0">evenly</p>
       </div>
       <div style="padding:32px">
         <p style="color:#374151">Bonjour ${buyerName},</p>
@@ -302,7 +302,7 @@ function buildPostEventHtml({
   return `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;background:#f9fafb;margin:0;padding:24px">
     <div style="max-width:520px;margin:0 auto;background:white;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb">
       <div style="background:#7c3aed;padding:24px 32px">
-        <p style="color:white;font-size:22px;font-weight:700;margin:0">evoly</p>
+        <p style="color:white;font-size:22px;font-weight:700;margin:0">evenly</p>
       </div>
       <div style="padding:32px">
         <p style="color:#374151">Bonjour ${buyerName},</p>

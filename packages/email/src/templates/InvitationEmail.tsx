@@ -1,14 +1,14 @@
 import * as React from "react";
 import {
-    Html,
-    Head,
-    Preview,
-    Body,
-    Container,
-    Section,
-    Text,
-    Button,
-    Hr,
+  Html,
+  Head,
+  Preview,
+  Body,
+  Container,
+  Section,
+  Text,
+  Button,
+  Hr,
 } from "@react-email/components";
 
 interface InvitationEmailProps {
@@ -30,12 +30,12 @@ export function InvitationEmailTemplate({
     <Html>
       <Head />
       <Preview>
-        {inviterName} vous invite à rejoindre {organizationName} sur Evoly
+        {inviterName} vous invite à rejoindre {organizationName} sur Evenly
       </Preview>
       <Body style={body}>
         <Container style={container}>
           <Section style={logoSection}>
-            <Text style={logoText}>evoly</Text>
+            <Text style={logoText}>evenly</Text>
           </Section>
           <Section style={content}>
             <Text style={heading}>
@@ -43,7 +43,7 @@ export function InvitationEmailTemplate({
             </Text>
             <Text style={paragraph}>
               {inviterName} vous invite à rejoindre{" "}
-              <strong>{organizationName}</strong> sur Evoly en tant que{" "}
+              <strong>{organizationName}</strong> sur Evenly en tant que{" "}
               <strong>{roleName}</strong>.
             </Text>
             <Button href={inviteUrl} style={button}>
@@ -57,7 +57,7 @@ export function InvitationEmailTemplate({
           </Section>
           <Hr style={hr} />
           <Section>
-            <Text style={footer}>© 2025 Evoly. Fait avec ♥ en Belgique.</Text>
+            <Text style={footer}>© 2025 Evenly. Fait avec ♥ en Belgique.</Text>
           </Section>
         </Container>
       </Body>

@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { db } from "@evoly/db";
+import { db } from "@evenly/db";
 import Link from "next/link";
 import { EventStatusBadge } from "@/components/events/EventStatusBadge";
 import { EventActionButtons } from "@/components/events/EventActionButtons";

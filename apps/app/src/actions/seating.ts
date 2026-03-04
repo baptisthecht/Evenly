@@ -1,6 +1,6 @@
 "use server";
 
-import { db } from "@evoly/db";
+import { db } from "@evenly/db";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { createPromoCodeAction, togglePromoCodeAction, deletePromoCodeAction } from "@/actions/promoCodes";
-import type { PromoCode } from "@evoly/db";
+import type { PromoCode } from "@evenly/db";
 
 interface TicketTypeSummary {
   id: string;

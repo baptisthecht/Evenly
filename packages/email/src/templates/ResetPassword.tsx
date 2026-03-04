@@ -1,14 +1,14 @@
 import * as React from "react";
 import {
-    Html,
-    Head,
-    Preview,
-    Body,
-    Container,
-    Section,
-    Text,
-    Button,
-    Hr,
+  Html,
+  Head,
+  Preview,
+  Body,
+  Container,
+  Section,
+  Text,
+  Button,
+  Hr,
 } from "@react-email/components";
 
 interface ResetPasswordProps {
@@ -20,11 +20,11 @@ export function ResetPasswordTemplate({ resetUrl, userName }: ResetPasswordProps
   return (
     <Html>
       <Head />
-      <Preview>Réinitialisez votre mot de passe Evoly</Preview>
+      <Preview>Réinitialisez votre mot de passe Evenly</Preview>
       <Body style={body}>
         <Container style={container}>
           <Section style={logoSection}>
-            <Text style={logoText}>evoly</Text>
+            <Text style={logoText}>evenly</Text>
           </Section>
           <Section style={content}>
             <Text style={heading}>Réinitialiser votre mot de passe</Text>
@@ -43,7 +43,7 @@ export function ResetPasswordTemplate({ resetUrl, userName }: ResetPasswordProps
           </Section>
           <Hr style={hr} />
           <Section>
-            <Text style={footer}>© 2025 Evoly. Fait avec ♥ en Belgique.</Text>
+            <Text style={footer}>© 2025 Evenly. Fait avec ♥ en Belgique.</Text>
           </Section>
         </Container>
       </Body>

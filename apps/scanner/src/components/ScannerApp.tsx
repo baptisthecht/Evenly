@@ -80,11 +80,20 @@ export function ScannerApp({ token, label, event }: Props) {
   // QR decoding via zxing-wasm
   async function startDecoding() {
     try {
-      const { readBarcodesFromVideoElement } = await import("zxing-wasm/reader");
       const decode = async () => {
         if (!videoRef.current || !scanning) return;
         try {
-          const results = await readBarcodesFromVideoElement(videoRef.current, {
+          const { readBarcodes } = await import("zxing-wasm/reader");
+
+          // Capturer une frame de la vidéo
+          const canvas = document.createElement("canvas");
+          canvas.width = videoRef.current.videoWidth;
+          canvas.height = videoRef.current.videoHeight;
+          const ctx = canvas.getContext("2d")!;
+          ctx.drawImage(videoRef.current, 0, 0);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          
+          const results = await readBarcodes(imageData, {
             formats: ["QRCode"],
           });
           if (results.length > 0 && results[0].text) {

@@ -13,7 +13,7 @@ export default async function OnboardingLayout({
     <div className="min-h-screen bg-gray-50">
       <header className="h-16 border-b border-gray-200 bg-white flex items-center px-6">
         <span className="text-xl font-bold text-violet-600 tracking-tight">
-          evoly
+          evenly
         </span>
       </header>
       <main className="flex items-start justify-center py-12 px-4">

@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { db } from "@evoly/db";
+import { db } from "@evenly/db";
 import { BillingPanel } from "@/components/billing/BillingPanel";
 
 export default async function BillingPage({
@@ -39,7 +39,7 @@ export default async function BillingPage({
         date: inv.created,
         amount: inv.amount_paid,
         status: inv.status ?? "unknown",
-        pdf: inv.invoice_pdf,
+        pdf: inv.invoice_pdf ?? null as string | null,
       }));
     } catch {}
   }

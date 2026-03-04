@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { db } from "@evoly/db";
+import { db } from "@evenly/db";
 import { FinancesPanel } from "@/components/finances/FinancesPanel";
 
 export default async function FinancesPage({

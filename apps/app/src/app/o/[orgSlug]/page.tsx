@@ -1,4 +1,4 @@
-import { db } from "@evoly/db";
+import { db } from "@evenly/db";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -26,6 +26,12 @@ async function getOrg(slug: string) {
         where: { status: "PUBLISHED", startsAt: { gte: new Date() } },
         orderBy: { startsAt: "asc" },
         take: 12,
+        include: {
+          ticketTypes: {
+            where: { status: "ACTIVE" },
+            select: { id: true },
+          },
+        },
       },
     },
   });
@@ -113,7 +119,7 @@ export default async function OrgPublicPage({ params }: Props) {
 
         <p className="text-center text-xs text-gray-300 pt-4">
           Billetterie propulsée par{" "}
-          <a href="https://evoly.com" className="text-gray-400 hover:underline">evoly</a>
+          <a href="https://evenly.com" className="text-gray-400 hover:underline">evenly</a>
         </p>
       </div>
     </div>

@@ -12,6 +12,8 @@ interface TicketType {
   maxPerOrder: number;
   minPerOrder: number;
   isNominative: boolean;
+  saleStartsAt: string | null;
+  saleEndsAt: string | null;
 }
 
 interface EventData {
@@ -266,7 +268,11 @@ export function CheckoutFlow({ event, onBack, onSuccess }: Props) {
                     <p className="text-xs font-medium text-gray-500">Billet {i + 1}</p>
                     {i === 0 && (
                       <button type="button"
-                        onClick={() => updateHolder(item.ticketTypeId, 0, "firstName", firstName) || updateHolder(item.ticketTypeId, 0, "lastName", lastName) || updateHolder(item.ticketTypeId, 0, "email", email)}
+                        onClick={() => {
+                          updateHolder(item.ticketTypeId, 0, "firstName", firstName);
+                          updateHolder(item.ticketTypeId, 0, "lastName", lastName);
+                          updateHolder(item.ticketTypeId, 0, "email", email);
+                        }}
                         className="text-xs text-violet-600 hover:underline">
                         Utiliser mes coordonnées
                       </button>
@@ -304,7 +310,7 @@ export function CheckoutFlow({ event, onBack, onSuccess }: Props) {
               )}
               {!isFreeOrder && (
                 <div className="flex justify-between text-gray-400 text-xs">
-                  <span>Commission Evoly</span>
+                  <span>Commission Evenly</span>
                   <span>~{(estimatedFees / 100).toFixed(2)}€</span>
                 </div>
               )}

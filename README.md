@@ -1,4 +1,4 @@
-# Evoly — La billetterie honnête
+# Evenly — La billetterie honnête
 
 > SaaS de billetterie événementielle transparent. Alternative à Eventbrite.
 
@@ -23,8 +23,8 @@
 
 ```bash
 # Cloner le repo
-git clone git@github.com:baptisthecht/Evoly.git
-cd Evoly
+git clone git@github.com:baptisthecht/Evenly.git
+cd Evenly
 
 # Installer les dépendances
 pnpm install
@@ -41,7 +41,7 @@ cp apps/app/.env.example apps/app/.env
 pnpm db:migrate
 
 # Seed les plans (Free et Pro)
-pnpm --filter @evoly/db seed
+pnpm --filter @evenly/db seed
 
 # Optionnel : ouvrir Prisma Studio
 pnpm db:studio
@@ -61,11 +61,11 @@ Apps disponibles :
 ## Structure
 
 ```
-evoly/
+evenly/
 ├── apps/
-│   ├── app/          → app.evoly.com (dashboard + billetterie)
-│   ├── web/          → evoly.com (landing marketing)
-│   └── scanner/      → scanner.evoly.com (PWA check-in)
+│   ├── app/          → app.evenly.com (dashboard + billetterie)
+│   ├── web/          → evenly.com (landing marketing)
+│   └── scanner/      → scanner.evenly.com (PWA check-in)
 └── packages/
     ├── db/           → Prisma schema + client singleton
     ├── core/         → Business logic pure (framework-agnostic)

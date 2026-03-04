@@ -1,4 +1,4 @@
-import { db, Permission } from "@evoly/db";
+import { db, Permission } from "@evenly/db";
 
 /**
  * Check if a user has a specific permission in an organization.

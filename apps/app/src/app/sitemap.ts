@@ -1,8 +1,8 @@
 import { MetadataRoute } from "next";
-import { db } from "@evoly/db";
+import { db } from "@evenly/db";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.com";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evenly.com";
 
   // Public published events
   const events = await db.event.findMany({

@@ -87,7 +87,7 @@ export function EventPublicPage({ event, otherEvents }: Props) {
               // eslint-disable-next-line @next/next/no-img-element
               <img src={event.organization.logoUrl} alt={event.organization.name} className="h-7 w-auto" />
             ) : (
-              <span className="font-bold text-violet-600 text-lg">evoly</span>
+              <span className="font-bold text-violet-600 text-lg">evenly</span>
             )}
           </a>
           <span className="text-sm text-gray-500 hidden sm:block">{event.organization.name}</span>
@@ -318,7 +318,7 @@ function TicketSelector({
               <span className="font-medium text-gray-900">{(subtotal / 100).toFixed(2)}€</span>
             </div>
             <p className="text-xs text-gray-400 mt-1">
-              + commission Evoly calculée à l&apos;étape suivante
+              + commission Evenly calculée à l&apos;étape suivante
             </p>
           </div>
         )}

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.com";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evenly.com";
 
 export function Hero() {
   const counterRef = useRef<HTMLSpanElement>(null);

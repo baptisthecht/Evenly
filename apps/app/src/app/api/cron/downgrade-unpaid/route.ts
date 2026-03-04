@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@evoly/db";
+import { db } from "@evenly/db";
 import { resend, FROM_EMAIL } from "@/lib/resend";
 
 export const runtime = "nodejs";
@@ -47,12 +47,12 @@ export async function GET(req: NextRequest) {
         await resend.emails.send({
           from: FROM_EMAIL,
           to: member.user.email,
-          subject: "Votre abonnement Evoly Pro a été annulé",
+          subject: "Votre abonnement Evenly Pro a été annulé",
           html: `
             <p>Bonjour ${member.user.name ?? ""},</p>
             <p>Suite à plusieurs tentatives de prélèvement infructueuses, votre organisation <strong>${org.name}</strong> a été rétrogradée au plan Free.</p>
             <p>Vos données et événements sont conservés. Pour réactiver le plan Pro, rendez-vous dans votre <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/${org.slug}/billing">espace billing</a>.</p>
-            <p>L'équipe Evoly</p>
+            <p>L'équipe Evenly</p>
           `,
         });
       } catch (e) {
