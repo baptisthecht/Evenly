@@ -9,7 +9,13 @@
     "db:generate": "pnpm --filter @evoly/db generate",
     "db:migrate": "pnpm --filter @evoly/db migrate:dev",
     "db:push": "pnpm --filter @evoly/db db:push",
-    "db:studio": "pnpm --filter @evoly/db studio"
+    "db:studio": "pnpm --filter @evoly/db studio",
+    "start:app": "pnpm --filter @evoly/app start",
+    "start:web": "pnpm --filter @evoly/web start",
+    "start:scanner": "pnpm --filter @evoly/scanner start",
+    "build:app": "pnpm --filter @evoly/app build",
+    "build:web": "pnpm --filter @evoly/web build",
+    "build:scanner": "pnpm --filter @evoly/scanner build"
   },
   "devDependencies": {
     "prettier": "^3.3.3",
