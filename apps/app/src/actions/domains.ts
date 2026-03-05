@@ -3,7 +3,7 @@
 import { db } from "@evoly/db";
 import { auth } from "@/lib/auth";
 import { requirePermission } from "@evoly/core/organizers";
-import { provisionDomain } from "@evoly/core/domains/provisioner";
+import { provisionDomain } from "@evoly/core";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import dns from "node:dns/promises";
