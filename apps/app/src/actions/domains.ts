@@ -3,6 +3,7 @@
 import { db } from "@evoly/db";
 import { auth } from "@/lib/auth";
 import { requirePermission } from "@evoly/core/organizers";
+import { provisionDomain } from "@evoly/core/domains/provisioner";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import dns from "node:dns/promises";
@@ -137,6 +138,13 @@ export async function addCustomDomainAction(
 			status: "PENDING",
 			sslStatus: "PENDING",
 		},
+	});
+
+	// Après validation CNAME + écriture en DB
+	await provisionDomain(domain);
+	await db.customDomain.update({
+		where: { domain },
+		data: { status: "ACTIVE" },
 	});
 
 	return { success: true, domainId: customDomain.id };
