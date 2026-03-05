@@ -31,8 +31,8 @@ model Account {
   userId            String
   provider          String
   providerAccountId String
-  accessToken       String?
-  refreshToken      String?
+  accessToken       String? @map("access_token")
+  refreshToken      String? @map("refresh_token")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
