@@ -31,6 +31,15 @@ export default auth(async (req) => {
 		hostWithoutPort !== `www.${baseDomain}` &&
 		!hostWithoutPort.endsWith(`.${appHost}`)
 	) {
+		// Don't rewrite internal routes to avoid infinite loops
+		if (
+			pathname.startsWith("/cd/") ||
+			pathname.startsWith("/o/") ||
+			pathname.startsWith("/e/")
+		) {
+			return NextResponse.next();
+		}
+
 		// Check if it's a subdomain of evoly.me (e.g. mon-asso.evoly.me)
 		if (hostWithoutPort.endsWith(`.${baseDomain}`)) {
 			const subdomain = hostWithoutPort.replace(`.${baseDomain}`, "");
