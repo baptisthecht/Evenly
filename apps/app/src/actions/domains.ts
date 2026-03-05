@@ -3,7 +3,7 @@
 import { db } from "@evoly/db";
 import { auth } from "@/lib/auth";
 import { requirePermission } from "@evoly/core/organizers";
-import { provisionDomain } from "@evoly/core";
+import { deprovisionDomain, provisionDomain } from "@evoly/core";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import dns from "node:dns/promises";
@@ -159,10 +159,19 @@ export async function deleteCustomDomainAction(
 
 	await requirePermission(session.user.id, organizationId, "SETTINGS_EDIT");
 
+	const customDomain = await db.customDomain.findUnique({
+		where: { id: domainId, organizationId },
+		select: { domain: true },
+	});
+	if (!customDomain) return { error: "Domaine introuvable." };
+
+	await deprovisionDomain(customDomain.domain);
+
 	await db.customDomain.delete({
 		where: { id: domainId, organizationId },
 	});
 
+	revalidatePath("/dashboard");
 	return { success: true };
 }
 
