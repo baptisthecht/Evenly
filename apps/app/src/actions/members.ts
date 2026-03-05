@@ -12,64 +12,67 @@ import { z } from "zod";
 // ─────────────────────────────────────────
 
 export async function inviteMemberAction(
-  organizationId: string,
-  formData: FormData
+	organizationId: string,
+	formData: FormData,
 ) {
-  const session = await auth();
-  if (!session?.user) return { error: "Non authentifié." };
+	const session = await auth();
+	if (!session?.user) return { error: "Non authentifié." };
 
-  await requirePermission(session.user.id, organizationId, "MEMBERS_INVITE");
+	await requirePermission(session.user.id, organizationId, "MEMBERS_INVITE");
 
-  const email = (formData.get("email") as string)?.toLowerCase().trim();
-  const roleId = formData.get("roleId") as string;
+	const email = (formData.get("email") as string)?.toLowerCase().trim();
+	const roleId = formData.get("roleId") as string;
 
-  if (!email || !z.string().email().safeParse(email).success) {
-    return { error: "Email invalide." };
-  }
-  if (!roleId) return { error: "Rôle requis." };
+	if (!email || !z.string().email().safeParse(email).success) {
+		return { error: "Email invalide." };
+	}
+	if (!roleId) return { error: "Rôle requis." };
 
-  const org = await db.organization.findUnique({
-    where: { id: organizationId },
-    select: { name: true, slug: true },
-  });
-  if (!org) return { error: "Organisation introuvable." };
+	const org = await db.organization.findUnique({
+		where: { id: organizationId },
+		select: { name: true, slug: true },
+	});
+	if (!org) return { error: "Organisation introuvable." };
 
-  // Check already member
-  const existingUser = await db.user.findUnique({ where: { email } });
-  if (existingUser) {
-    const isMember = await db.organizationMember.findUnique({
-      where: { organizationId_userId: { organizationId, userId: existingUser.id } },
-    });
-    if (isMember) return { error: "Cet utilisateur est déjà membre." };
-  }
+	// Check already member
+	const existingUser = await db.user.findUnique({ where: { email } });
+	if (existingUser) {
+		const isMember = await db.organizationMember.findUnique({
+			where: {
+				organizationId_userId: { organizationId, userId: existingUser.id },
+			},
+		});
+		if (isMember) return { error: "Cet utilisateur est déjà membre." };
+	}
 
-  // Check existing pending invitation
-  const existing = await db.invitation.findFirst({
-    where: { organizationId, email, status: "PENDING" },
-  });
-  if (existing) return { error: "Une invitation est déjà en attente pour cet email." };
+	// Check existing pending invitation
+	const existing = await db.invitation.findFirst({
+		where: { organizationId, email, status: "PENDING" },
+	});
+	if (existing)
+		return { error: "Une invitation est déjà en attente pour cet email." };
 
-  const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
+	const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
 
-  const invitation = await db.invitation.create({
-    data: {
-      organizationId,
-      email,
-      roleId,
-      expiresAt,
-      createdBy: session.user.id,
-    },
-  });
+	const invitation = await db.invitation.create({
+		data: {
+			organizationId,
+			email,
+			roleId,
+			expiresAt,
+			createdBy: session.user.id,
+		},
+	});
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.com";
-  const inviteUrl = `${appUrl}/invite/${invitation.token}`;
+	const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.me";
+	const inviteUrl = `${appUrl}/invite/${invitation.token}`;
 
-  try {
-    await resend.emails.send({
-      from: FROM_EMAIL,
-      to: email,
-      subject: `Invitation à rejoindre ${org.name} sur Evoly`,
-      html: `
+	try {
+		await resend.emails.send({
+			from: FROM_EMAIL,
+			to: email,
+			subject: `Invitation à rejoindre ${org.name} sur Evoly`,
+			html: `
         <p>Bonjour,</p>
         <p>Vous avez été invité(e) à rejoindre l'organisation <strong>${org.name}</strong> sur Evoly.</p>
         <p>Cette invitation expire dans 48 heures.</p>
@@ -78,64 +81,70 @@ export async function inviteMemberAction(
         </a></p>
         <p style="font-size:12px;color:#9ca3af">Si vous n'attendiez pas cette invitation, ignorez cet email.</p>
       `,
-    });
-  } catch (e) {
-    console.error("[inviteMemberAction] Email error:", e);
-  }
+		});
+	} catch (e) {
+		console.error("[inviteMemberAction] Email error:", e);
+	}
 
-  revalidatePath(`/dashboard/${org.slug}/members`);
-  return { success: true };
+	revalidatePath(`/dashboard/${org.slug}/members`);
+	return { success: true };
 }
 
-export async function cancelInvitationAction(invitationId: string, organizationId: string) {
-  const session = await auth();
-  if (!session?.user) return { error: "Non authentifié." };
+export async function cancelInvitationAction(
+	invitationId: string,
+	organizationId: string,
+) {
+	const session = await auth();
+	if (!session?.user) return { error: "Non authentifié." };
 
-  await requirePermission(session.user.id, organizationId, "MEMBERS_INVITE");
+	await requirePermission(session.user.id, organizationId, "MEMBERS_INVITE");
 
-  await db.invitation.update({
-    where: { id: invitationId, organizationId },
-    data: { status: "CANCELLED" },
-  });
+	await db.invitation.update({
+		where: { id: invitationId, organizationId },
+		data: { status: "CANCELLED" },
+	});
 
-  revalidatePath(`/dashboard`);
-  return { success: true };
+	revalidatePath(`/dashboard`);
+	return { success: true };
 }
 
-export async function resendInvitationAction(invitationId: string, organizationId: string) {
-  const session = await auth();
-  if (!session?.user) return { error: "Non authentifié." };
+export async function resendInvitationAction(
+	invitationId: string,
+	organizationId: string,
+) {
+	const session = await auth();
+	if (!session?.user) return { error: "Non authentifié." };
 
-  await requirePermission(session.user.id, organizationId, "MEMBERS_INVITE");
+	await requirePermission(session.user.id, organizationId, "MEMBERS_INVITE");
 
-  const invitation = await db.invitation.findUnique({
-    where: { id: invitationId, organizationId },
-    include: { organization: { select: { name: true, slug: true } } },
-  });
-  if (!invitation) return { error: "Invitation introuvable." };
+	const invitation = await db.invitation.findUnique({
+		where: { id: invitationId, organizationId },
+		include: { organization: { select: { name: true, slug: true } } },
+	});
+	if (!invitation) return { error: "Invitation introuvable." };
 
-  const newExpiry = new Date(Date.now() + 48 * 60 * 60 * 1000);
-  const newToken = crypto.randomUUID();
+	const newExpiry = new Date(Date.now() + 48 * 60 * 60 * 1000);
+	const newToken = crypto.randomUUID();
 
-  await db.invitation.update({
-    where: { id: invitationId },
-    data: { expiresAt: newExpiry, token: newToken, status: "PENDING" },
-  });
+	await db.invitation.update({
+		where: { id: invitationId },
+		data: { expiresAt: newExpiry, token: newToken, status: "PENDING" },
+	});
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.com";
-  try {
-    await resend.emails.send({
-      from: FROM_EMAIL,
-      to: invitation.email,
-      subject: `Rappel — Invitation à rejoindre ${invitation.organization.name}`,
-      html: `<p>Votre invitation à rejoindre <strong>${invitation.organization.name}</strong> sur Evoly est toujours valide.</p>
+	const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.me";
+	try {
+		await resend.emails.send({
+			from: FROM_EMAIL,
+			to: invitation.email,
+			subject: `Rappel — Invitation à rejoindre ${invitation.organization.name}`,
+			html: `<p>Votre invitation à rejoindre <strong>${invitation.organization.name}</strong> sur Evoly est toujours valide.</p>
         <p><a href="${appUrl}/invite/${newToken}">Accepter l'invitation →</a></p>`,
-    });
-  } catch (e) {
-    console.error("[resendInvitationAction] Email error:", e);
-  }
+		});
+	} catch (e) {
+		console.error("[resendInvitationAction] Email error:", e);
+	}
 
-  return { success: true };
+	return { success: true };
 }
 
 // ─────────────────────────────────────────
@@ -143,48 +152,66 @@ export async function resendInvitationAction(invitationId: string, organizationI
 // ─────────────────────────────────────────
 
 export async function acceptInvitationAction(token: string) {
-  const session = await auth();
-  if (!session?.user) return { error: "Connectez-vous pour accepter l'invitation.", requireLogin: true };
+	const session = await auth();
+	if (!session?.user)
+		return {
+			error: "Connectez-vous pour accepter l'invitation.",
+			requireLogin: true,
+		};
 
-  const invitation = await db.invitation.findUnique({
-    where: { token },
-    include: { organization: { select: { id: true, slug: true, name: true } } },
-  });
+	const invitation = await db.invitation.findUnique({
+		where: { token },
+		include: { organization: { select: { id: true, slug: true, name: true } } },
+	});
 
-  if (!invitation) return { error: "Invitation introuvable." };
-  if (invitation.status !== "PENDING") return { error: "Cette invitation n'est plus valide." };
-  if (invitation.expiresAt < new Date()) {
-    await db.invitation.update({ where: { id: invitation.id }, data: { status: "EXPIRED" } });
-    return { error: "Cette invitation a expiré." };
-  }
-  if (invitation.email !== session.user.email) {
-    return { error: "Cette invitation est destinée à une autre adresse email." };
-  }
+	if (!invitation) return { error: "Invitation introuvable." };
+	if (invitation.status !== "PENDING")
+		return { error: "Cette invitation n'est plus valide." };
+	if (invitation.expiresAt < new Date()) {
+		await db.invitation.update({
+			where: { id: invitation.id },
+			data: { status: "EXPIRED" },
+		});
+		return { error: "Cette invitation a expiré." };
+	}
+	if (invitation.email !== session.user.email) {
+		return {
+			error: "Cette invitation est destinée à une autre adresse email.",
+		};
+	}
 
-  // Check already member
-  const isMember = await db.organizationMember.findUnique({
-    where: { organizationId_userId: { organizationId: invitation.organizationId, userId: session.user.id } },
-  });
-  if (isMember) {
-    await db.invitation.update({ where: { id: invitation.id }, data: { status: "ACCEPTED" } });
-    return { success: true, orgSlug: invitation.organization.slug };
-  }
+	// Check already member
+	const isMember = await db.organizationMember.findUnique({
+		where: {
+			organizationId_userId: {
+				organizationId: invitation.organizationId,
+				userId: session.user.id,
+			},
+		},
+	});
+	if (isMember) {
+		await db.invitation.update({
+			where: { id: invitation.id },
+			data: { status: "ACCEPTED" },
+		});
+		return { success: true, orgSlug: invitation.organization.slug };
+	}
 
-  await db.$transaction([
-    db.organizationMember.create({
-      data: {
-        organizationId: invitation.organizationId,
-        userId: session.user.id,
-        roleId: invitation.roleId,
-      },
-    }),
-    db.invitation.update({
-      where: { id: invitation.id },
-      data: { status: "ACCEPTED" },
-    }),
-  ]);
+	await db.$transaction([
+		db.organizationMember.create({
+			data: {
+				organizationId: invitation.organizationId,
+				userId: session.user.id,
+				roleId: invitation.roleId,
+			},
+		}),
+		db.invitation.update({
+			where: { id: invitation.id },
+			data: { status: "ACCEPTED" },
+		}),
+	]);
 
-  return { success: true, orgSlug: invitation.organization.slug };
+	return { success: true, orgSlug: invitation.organization.slug };
 }
 
 // ─────────────────────────────────────────
@@ -192,144 +219,165 @@ export async function acceptInvitationAction(token: string) {
 // ─────────────────────────────────────────
 
 export async function changeMemberRoleAction(
-  memberId: string,
-  organizationId: string,
-  newRoleId: string
+	memberId: string,
+	organizationId: string,
+	newRoleId: string,
 ) {
-  const session = await auth();
-  if (!session?.user) return { error: "Non authentifié." };
+	const session = await auth();
+	if (!session?.user) return { error: "Non authentifié." };
 
-  await requirePermission(session.user.id, organizationId, "MEMBERS_MANAGE_ROLES");
+	await requirePermission(
+		session.user.id,
+		organizationId,
+		"MEMBERS_MANAGE_ROLES",
+	);
 
-  const member = await db.organizationMember.findUnique({
-    where: { id: memberId },
-    include: { role: { select: { name: true } } },
-  });
-  if (!member || member.organizationId !== organizationId) {
-    return { error: "Membre introuvable." };
-  }
+	const member = await db.organizationMember.findUnique({
+		where: { id: memberId },
+		include: { role: { select: { name: true } } },
+	});
+	if (!member || member.organizationId !== organizationId) {
+		return { error: "Membre introuvable." };
+	}
 
-  // Can't demote last admin
-  if (member.role.name === "Admin") {
-    const adminCount = await db.organizationMember.count({
-      where: { organizationId, role: { name: "Admin" } },
-    });
-    if (adminCount <= 1) {
-      return { error: "Impossible : ce membre est le seul Admin." };
-    }
-  }
+	// Can't demote last admin
+	if (member.role.name === "Admin") {
+		const adminCount = await db.organizationMember.count({
+			where: { organizationId, role: { name: "Admin" } },
+		});
+		if (adminCount <= 1) {
+			return { error: "Impossible : ce membre est le seul Admin." };
+		}
+	}
 
-  await db.organizationMember.update({
-    where: { id: memberId },
-    data: { roleId: newRoleId },
-  });
+	await db.organizationMember.update({
+		where: { id: memberId },
+		data: { roleId: newRoleId },
+	});
 
-  revalidatePath(`/dashboard`);
-  return { success: true };
+	revalidatePath(`/dashboard`);
+	return { success: true };
 }
 
-export async function removeMemberAction(memberId: string, organizationId: string) {
-  const session = await auth();
-  if (!session?.user) return { error: "Non authentifié." };
+export async function removeMemberAction(
+	memberId: string,
+	organizationId: string,
+) {
+	const session = await auth();
+	if (!session?.user) return { error: "Non authentifié." };
 
-  await requirePermission(session.user.id, organizationId, "MEMBERS_REMOVE");
+	await requirePermission(session.user.id, organizationId, "MEMBERS_REMOVE");
 
-  const member = await db.organizationMember.findUnique({
-    where: { id: memberId },
-    include: { role: { select: { name: true } } },
-  });
-  if (!member || member.organizationId !== organizationId) {
-    return { error: "Membre introuvable." };
-  }
+	const member = await db.organizationMember.findUnique({
+		where: { id: memberId },
+		include: { role: { select: { name: true } } },
+	});
+	if (!member || member.organizationId !== organizationId) {
+		return { error: "Membre introuvable." };
+	}
 
-  // Prevent removing last admin
-  if (member.role.name === "Admin") {
-    const adminCount = await db.organizationMember.count({
-      where: { organizationId, role: { name: "Admin" } },
-    });
-    if (adminCount <= 1) {
-      return { error: "Impossible de retirer le seul Admin de l'organisation." };
-    }
-  }
+	// Prevent removing last admin
+	if (member.role.name === "Admin") {
+		const adminCount = await db.organizationMember.count({
+			where: { organizationId, role: { name: "Admin" } },
+		});
+		if (adminCount <= 1) {
+			return {
+				error: "Impossible de retirer le seul Admin de l'organisation.",
+			};
+		}
+	}
 
-  // Prevent self-removal if last admin
-  if (member.userId === session.user.id && member.role.name === "Admin") {
-    return { error: "Vous ne pouvez pas vous retirer vous-même en tant que dernier Admin." };
-  }
+	// Prevent self-removal if last admin
+	if (member.userId === session.user.id && member.role.name === "Admin") {
+		return {
+			error:
+				"Vous ne pouvez pas vous retirer vous-même en tant que dernier Admin.",
+		};
+	}
 
-  await db.organizationMember.delete({ where: { id: memberId } });
+	await db.organizationMember.delete({ where: { id: memberId } });
 
-  revalidatePath(`/dashboard`);
-  return { success: true };
+	revalidatePath(`/dashboard`);
+	return { success: true };
 }
 
 // ─────────────────────────────────────────
 // ROLES
 // ─────────────────────────────────────────
 
-export async function createRoleAction(organizationId: string, formData: FormData) {
-  const session = await auth();
-  if (!session?.user) return { error: "Non authentifié." };
+export async function createRoleAction(
+	organizationId: string,
+	formData: FormData,
+) {
+	const session = await auth();
+	if (!session?.user) return { error: "Non authentifié." };
 
-  await requirePermission(session.user.id, organizationId, "ROLES_CREATE");
+	await requirePermission(session.user.id, organizationId, "ROLES_CREATE");
 
-  const name = (formData.get("name") as string)?.trim();
-  if (!name) return { error: "Nom du rôle requis." };
+	const name = (formData.get("name") as string)?.trim();
+	if (!name) return { error: "Nom du rôle requis." };
 
-  const permissionsRaw = formData.getAll("permissions") as string[];
+	const permissionsRaw = formData.getAll("permissions") as string[];
 
-  const role = await db.role.create({
-    data: { organizationId, name, permissions: permissionsRaw as any },
-  });
+	const role = await db.role.create({
+		data: { organizationId, name, permissions: permissionsRaw as any },
+	});
 
-  revalidatePath(`/dashboard`);
-  return { success: true, roleId: role.id };
+	revalidatePath(`/dashboard`);
+	return { success: true, roleId: role.id };
 }
 
 export async function updateRoleAction(
-  roleId: string,
-  organizationId: string,
-  formData: FormData
+	roleId: string,
+	organizationId: string,
+	formData: FormData,
 ) {
-  const session = await auth();
-  if (!session?.user) return { error: "Non authentifié." };
+	const session = await auth();
+	if (!session?.user) return { error: "Non authentifié." };
 
-  await requirePermission(session.user.id, organizationId, "ROLES_EDIT");
+	await requirePermission(session.user.id, organizationId, "ROLES_EDIT");
 
-  const role = await db.role.findUnique({ where: { id: roleId } });
-  if (!role || role.organizationId !== organizationId) return { error: "Rôle introuvable." };
-  if (role.isSystem) return { error: "Les rôles système ne peuvent pas être modifiés." };
+	const role = await db.role.findUnique({ where: { id: roleId } });
+	if (!role || role.organizationId !== organizationId)
+		return { error: "Rôle introuvable." };
+	if (role.isSystem)
+		return { error: "Les rôles système ne peuvent pas être modifiés." };
 
-  const name = (formData.get("name") as string)?.trim();
-  const permissionsRaw = formData.getAll("permissions") as string[];
+	const name = (formData.get("name") as string)?.trim();
+	const permissionsRaw = formData.getAll("permissions") as string[];
 
-  await db.role.update({
-    where: { id: roleId },
-    data: { name, permissions: permissionsRaw as any },
-  });
+	await db.role.update({
+		where: { id: roleId },
+		data: { name, permissions: permissionsRaw as any },
+	});
 
-  revalidatePath(`/dashboard`);
-  return { success: true };
+	revalidatePath(`/dashboard`);
+	return { success: true };
 }
 
 export async function deleteRoleAction(roleId: string, organizationId: string) {
-  const session = await auth();
-  if (!session?.user) return { error: "Non authentifié." };
+	const session = await auth();
+	if (!session?.user) return { error: "Non authentifié." };
 
-  await requirePermission(session.user.id, organizationId, "ROLES_DELETE");
+	await requirePermission(session.user.id, organizationId, "ROLES_DELETE");
 
-  const role = await db.role.findUnique({
-    where: { id: roleId },
-    include: { _count: { select: { members: true } } },
-  });
-  if (!role || role.organizationId !== organizationId) return { error: "Rôle introuvable." };
-  if (role.isSystem) return { error: "Les rôles système ne peuvent pas être supprimés." };
-  if (role._count.members > 0) {
-    return { error: `Ce rôle est utilisé par ${role._count.members} membre(s). Réaffectez-les d'abord.` };
-  }
+	const role = await db.role.findUnique({
+		where: { id: roleId },
+		include: { _count: { select: { members: true } } },
+	});
+	if (!role || role.organizationId !== organizationId)
+		return { error: "Rôle introuvable." };
+	if (role.isSystem)
+		return { error: "Les rôles système ne peuvent pas être supprimés." };
+	if (role._count.members > 0) {
+		return {
+			error: `Ce rôle est utilisé par ${role._count.members} membre(s). Réaffectez-les d'abord.`,
+		};
+	}
 
-  await db.role.delete({ where: { id: roleId } });
+	await db.role.delete({ where: { id: roleId } });
 
-  revalidatePath(`/dashboard`);
-  return { success: true };
+	revalidatePath(`/dashboard`);
+	return { success: true };
 }

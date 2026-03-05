@@ -63,9 +63,9 @@ Apps disponibles :
 ```
 evoly/
 ├── apps/
-│   ├── app/          → app.evoly.com (dashboard + billetterie)
-│   ├── web/          → evoly.com (landing marketing)
-│   └── scanner/      → scanner.evoly.com (PWA check-in)
+│   ├── app/          → app.evoly.me (dashboard + billetterie)
+│   ├── web/          → evoly.me (landing marketing)
+│   └── scanner/      → scanner.evoly.me (PWA check-in)
 └── packages/
     ├── db/           → Prisma schema + client singleton
     ├── core/         → Business logic pure (framework-agnostic)
