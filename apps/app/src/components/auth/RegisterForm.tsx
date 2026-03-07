@@ -3,9 +3,15 @@
 import { useState, useTransition } from "react";
 import { signIn } from "next-auth/react";
 import { registerAction } from "@/actions/auth";
+import { acceptInvitationAction } from "@/actions/members";
 import { useRouter } from "next/navigation";
 
-export function RegisterForm() {
+interface Props {
+  inviteToken?: string;
+  prefillEmail?: string;
+}
+
+export function RegisterForm({ inviteToken, prefillEmail }: Props) {
 	const router = useRouter();
 	const [isPending, startTransition] = useTransition();
 	const [error, setError] = useState<string | null>(null);
@@ -32,12 +38,32 @@ export function RegisterForm() {
 				return;
 			}
 
+			// Si on a un token d'invitation, on se connecte directement puis on accepte
+			if (inviteToken) {
+				const signInResult = await signIn("credentials", {
+					email: formData.get("email") as string,
+					password,
+					redirect: false,
+				});
+				if (signInResult?.ok) {
+					const acceptResult = await acceptInvitationAction(inviteToken);
+					if (acceptResult.success && acceptResult.orgSlug) {
+						router.push(`/dashboard/${acceptResult.orgSlug}`);
+						return;
+					}
+				}
+				// Fallback : aller sur la page d'invitation
+				router.push(`/invite/${inviteToken}`);
+				return;
+			}
+
 			setSuccess(true);
 		});
 	}
 
 	async function handleGoogleSignIn() {
-		await signIn("google", { callbackUrl: "/onboarding/profile" });
+		const callbackUrl = inviteToken ? `/invite/${inviteToken}` : "/onboarding/profile";
+		await signIn("google", { callbackUrl });
 	}
 
 	if (success) {
@@ -156,7 +182,9 @@ export function RegisterForm() {
 						type="email"
 						autoComplete="email"
 						required
-						className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+						defaultValue={prefillEmail ?? ""}
+						readOnly={!!inviteToken && !!prefillEmail}
+						className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors read-only:bg-gray-50"
 						placeholder="vous@exemple.com"
 					/>
 				</div>

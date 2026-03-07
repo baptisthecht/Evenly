@@ -77,6 +77,7 @@ export default async function MembersPage({
           id: i.id,
           email: i.email,
           roleId: i.roleId,
+          token: i.token,
           expiresAt: i.expiresAt.toISOString(),
           createdAt: i.createdAt.toISOString(),
         }))}

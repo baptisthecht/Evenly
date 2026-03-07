@@ -50,6 +50,8 @@ interface Props {
 export function EventPublicPage({ event, otherEvents }: Props) {
   const [showCheckout, setShowCheckout] = useState(false);
   const [orderComplete, setOrderComplete] = useState<{ orderId: string; magicToken: string } | null>(null);
+  // Shared quantities state — lives here so CheckoutFlow receives what TicketSelector set
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
 
   const startDate = new Date(event.startsAt);
   const endDate = event.endsAt ? new Date(event.endsAt) : null;
@@ -195,6 +197,8 @@ export function EventPublicPage({ event, otherEvents }: Props) {
               {showCheckout ? (
                 <CheckoutFlow
                   event={event}
+                  quantities={quantities}
+                  onQuantityChange={setQuantities}
                   onBack={() => setShowCheckout(false)}
                   onSuccess={(orderId, magicToken) => setOrderComplete({ orderId, magicToken })}
                 />
@@ -203,6 +207,8 @@ export function EventPublicPage({ event, otherEvents }: Props) {
                   event={event}
                   canBuy={canBuy}
                   stripeConnected={stripeConnected}
+                  quantities={quantities}
+                  onQuantityChange={setQuantities}
                   onContinue={() => setShowCheckout(true)}
                 />
               )}
@@ -229,23 +235,23 @@ export function EventPublicPage({ event, otherEvents }: Props) {
 // ── Ticket Selector ──
 
 function TicketSelector({
-  event, canBuy, stripeConnected, onContinue,
+  event, canBuy, stripeConnected, quantities, onQuantityChange, onContinue,
 }: {
   event: EventData;
   canBuy: boolean;
   stripeConnected: boolean;
+  quantities: Record<string, number>;
+  onQuantityChange: (q: Record<string, number>) => void;
   onContinue: () => void;
 }) {
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  function setQty(id: string, qty: number) {
+    onQuantityChange({ ...quantities, [id]: qty });
+  }
 
   const totalItems = Object.values(quantities).reduce((a, b) => a + b, 0);
   const subtotal = event.ticketTypes.reduce((acc, tt) => {
     return acc + (quantities[tt.id] ?? 0) * tt.priceCents;
   }, 0);
-
-  function setQty(id: string, qty: number) {
-    setQuantities((prev) => ({ ...prev, [id]: qty }));
-  }
 
   const now = new Date();
 

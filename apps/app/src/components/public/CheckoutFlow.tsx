@@ -39,17 +39,17 @@ interface PromoResult {
 
 interface Props {
   event: EventData;
+  quantities: Record<string, number>;
+  onQuantityChange: (q: Record<string, number>) => void;
   onBack: () => void;
   onSuccess: (orderId: string, magicToken: string) => void;
 }
 
-export function CheckoutFlow({ event, onBack, onSuccess }: Props) {
+export function CheckoutFlow({ event, quantities, onQuantityChange, onBack, onSuccess }: Props) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  // Cart — built from quantities on previous screen
-  // For simplicity we let user pick quantities here too
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  // quantities vient du parent — plus de double saisie
 
   // Buyer info
   const [firstName, setFirstName] = useState("");
@@ -200,10 +200,10 @@ export function CheckoutFlow({ event, onBack, onSuccess }: Props) {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => setQuantities((p) => ({ ...p, [tt.id]: Math.max(0, qty - 1) }))}
+                  <button type="button" onClick={() => onQuantityChange({ ...quantities, [tt.id]: Math.max(0, qty - 1) })}
                     disabled={qty <= 0} className="w-7 h-7 rounded-full border border-gray-300 text-sm flex items-center justify-center hover:bg-gray-50 disabled:opacity-30">−</button>
                   <span className="w-4 text-center text-sm font-medium">{qty}</span>
-                  <button type="button" onClick={() => setQuantities((p) => ({ ...p, [tt.id]: Math.min(tt.maxPerOrder, qty + 1) }))}
+                  <button type="button" onClick={() => onQuantityChange({ ...quantities, [tt.id]: Math.min(tt.maxPerOrder, qty + 1) })}
                     disabled={qty >= tt.maxPerOrder || (available !== null && qty >= available)}
                     className="w-7 h-7 rounded-full border border-gray-300 text-sm flex items-center justify-center hover:bg-gray-50 disabled:opacity-30">+</button>
                 </div>

@@ -65,13 +65,13 @@ export default async function InvitePage({
           <div className="flex flex-col gap-2">
             <a
               href={`/login?callbackUrl=/invite/${token}`}
-              className="py-2.5 bg-violet-600 text-white text-sm font-medium rounded-xl hover:bg-violet-700 transition-colors"
+              className="py-2.5 bg-violet-600 text-white text-sm font-medium rounded-xl hover:bg-violet-700 transition-colors text-center"
             >
               Se connecter pour accepter
             </a>
             <a
-              href={`/register?email=${encodeURIComponent(invitation.email)}&callbackUrl=/invite/${token}`}
-              className="py-2.5 border border-gray-300 text-sm text-gray-700 rounded-xl hover:bg-gray-50"
+              href={`/register?invite=${token}&email=${encodeURIComponent(invitation.email)}`}
+              className="py-2.5 border border-gray-300 text-sm text-gray-700 rounded-xl hover:bg-gray-50 text-center"
             >
               Créer un compte
             </a>

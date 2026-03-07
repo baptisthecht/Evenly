@@ -31,12 +31,20 @@ export default auth(async (req) => {
 		hostWithoutPort !== `www.${baseDomain}` &&
 		!hostWithoutPort.endsWith(`.${appHost}`)
 	) {
-		// Don't rewrite internal routes to avoid infinite loops
-		if (
-			pathname.startsWith("/cd/") ||
-			pathname.startsWith("/o/") ||
-			pathname.startsWith("/e/")
-		) {
+		// Paths that must be accessible on all subdomains — never rewrite them
+		const BYPASS_PATHS = [
+			"/confirmation/",
+			"/tickets/",
+			"/refund/",
+			"/resale/",
+			"/verify/",
+			"/invite/",
+			"/unsubscribe",
+			"/cd/",
+			"/o/",
+			"/e/",
+		];
+		if (BYPASS_PATHS.some((p) => pathname.startsWith(p))) {
 			return NextResponse.next();
 		}
 

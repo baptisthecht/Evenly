@@ -77,19 +77,24 @@ export default async function EventCheckinPage({
       </div>
 
       {/* Scanner link to app */}
-      <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 flex items-center justify-between gap-4">
-        <div>
-          <p className="text-sm font-semibold text-violet-900">Scanner QR</p>
-          <p className="text-xs text-violet-600">Ouvrez l&apos;app scanner sur votre téléphone</p>
+      <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 space-y-3">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-violet-900">Scanner QR — Accès direct</p>
+            <p className="text-xs text-violet-600">Ouvrez le scanner sur votre téléphone en tant qu&apos;organisateur connecté</p>
+          </div>
+          <a
+            href={`${process.env.NEXT_PUBLIC_SCANNER_URL ?? "https://scanner.evoly.me"}?eventId=${event.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
+          >
+            Ouvrir le scanner →
+          </a>
         </div>
-        <a
-          href={`${process.env.NEXT_PUBLIC_SCANNER_URL ?? "http://localhost:3002"}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-medium rounded-lg transition-colors"
-        >
-          Ouvrir →
-        </a>
+        <p className="text-[11px] text-violet-500">
+          Ce lien utilise votre session connectée. Pour les bénévoles sans compte Evoly, générez un lien temporaire ci-dessous.
+        </p>
       </div>
 
       {/* Scanner links for volunteers */}

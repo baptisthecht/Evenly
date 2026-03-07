@@ -38,7 +38,7 @@ interface Member {
 }
 interface Invitation {
   id: string; email: string; roleId: string;
-  expiresAt: string; createdAt: string;
+  token: string; expiresAt: string; createdAt: string;
 }
 interface Role {
   id: string; name: string; isSystem: boolean;
@@ -239,19 +239,38 @@ export function MembersManager({
               <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Invitations en attente</h3>
               <div className="bg-white rounded-2xl border border-gray-200 divide-y divide-gray-100">
                 {invitations.map(inv => (
-                  <div key={inv.id} className="flex items-center gap-3 p-4">
-                    <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-sm">⏳</div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">{inv.email}</p>
-                      <p className="text-xs text-gray-400">Expire dans {expiresIn(inv.expiresAt)}</p>
+                  <div key={inv.id} className="p-4 space-y-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-sm flex-shrink-0">⏳</div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">{inv.email}</p>
+                        <p className="text-xs text-gray-400">Expire dans {expiresIn(inv.expiresAt)}</p>
+                      </div>
+                      <div className="flex gap-1">
+                        <button onClick={() => handleResendInvite(inv.id, inv.email)} disabled={isPending}
+                          className="text-xs px-2 py-1 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 disabled:opacity-50">
+                          Renvoyer
+                        </button>
+                        <button onClick={() => handleCancelInvite(inv.id)} disabled={isPending}
+                          className="text-xs px-2 py-1 text-red-400 hover:text-red-600">✕</button>
+                      </div>
                     </div>
-                    <div className="flex gap-1">
-                      <button onClick={() => handleResendInvite(inv.id, inv.email)} disabled={isPending}
-                        className="text-xs px-2 py-1 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 disabled:opacity-50">
-                        Renvoyer
+                    {/* Lien d'invitation copiable */}
+                    <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-1.5">
+                      <span className="text-[11px] text-gray-400 truncate flex-1 font-mono">
+                        {typeof window !== "undefined" ? window.location.origin : ""}/invite/{inv.token}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const url = `${window.location.origin}/invite/${inv.token}`;
+                          navigator.clipboard.writeText(url);
+                          notify("Lien copié !");
+                        }}
+                        className="text-[11px] text-violet-600 hover:underline flex-shrink-0"
+                      >
+                        Copier
                       </button>
-                      <button onClick={() => handleCancelInvite(inv.id)} disabled={isPending}
-                        className="text-xs px-2 py-1 text-red-400 hover:text-red-600">✕</button>
                     </div>
                   </div>
                 ))}
