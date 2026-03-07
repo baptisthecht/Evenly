@@ -50,28 +50,28 @@ export default async function EventOverviewPage({
   });
 
   // Compute all public URLs for this event
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.me";
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN ?? "evoly.me";
 
-  // Always: [org-slug].evoly.me/e/[event-slug] (subdomain URL)
-  const subdomainUrl = event.status === "PUBLISHED"
-    ? `https://${org.slug}.${baseDomain}/e/${event.slug}`
-    : null;
+  const isPublished = event.status === "PUBLISHED";
 
-  // Fallback app URL
-  const publicUrl = event.status === "PUBLISHED"
-    ? `${appUrl}/e/${event.slug}`
-    : null;
+  // URL principale via app.evoly.me
+  const mainUrl = isPublished ? `${appUrl}/e/${event.slug}` : null;
+
+  // URL via sous-domaine org : asso.evoly.me (affiche la même page via le middleware)
+  const subdomainUrl = isPublished ? `https://${org.slug}.${baseDomain}/e/${event.slug}` : null;
 
   // Custom domains pointing to this event or this org
-  const customDomains = await db.customDomain.findMany({
-    where: {
-      organizationId: org.id,
-      status: "ACTIVE",
-      OR: [{ eventId: event.id }, { eventId: null }],
-    },
-    select: { domain: true, scope: true },
-  });
+  const customDomains = isPublished
+    ? await db.customDomain.findMany({
+        where: {
+          organizationId: org.id,
+          status: "ACTIVE",
+          OR: [{ eventId: event.id }, { eventId: null }],
+        },
+        select: { domain: true },
+      })
+    : [];
 
   return (
     <div className="p-6 space-y-6">
@@ -84,44 +84,24 @@ export default async function EventOverviewPage({
       </div>
 
       {/* Public links */}
-      {publicUrl && (
-        <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 space-y-3">
+      {mainUrl && (
+        <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 space-y-2">
           <p className="text-xs font-semibold text-violet-700 uppercase tracking-wide">Liens publics</p>
 
-          {/* Subdomain URL */}
-          <div className="flex items-center justify-between gap-3 bg-white rounded-lg px-3 py-2 border border-violet-100">
-            <div className="min-w-0">
-              <p className="text-[10px] text-gray-400 mb-0.5">Sous-domaine Evoly</p>
-              <p className="text-xs text-violet-800 font-mono truncate">{subdomainUrl}</p>
-            </div>
-            <div className="flex gap-1 flex-shrink-0">
-              <CopyButton text={subdomainUrl!} />
-              <a href={subdomainUrl!} target="_blank" rel="noopener noreferrer"
-                className="px-2 py-1 text-[11px] font-medium text-violet-700 border border-violet-200 rounded-lg hover:bg-violet-50 transition-colors">
-                Voir
-              </a>
-            </div>
-          </div>
+          {/* Main URL: app.evoly.me/e/slug */}
+          <LinkRow label="URL principale" url={mainUrl} />
 
-          {/* Custom domain URLs */}
-          {customDomains.map((cd) => {
-            const cdUrl = `https://${cd.domain}/e/${event.slug}`;
-            return (
-              <div key={cd.domain} className="flex items-center justify-between gap-3 bg-white rounded-lg px-3 py-2 border border-violet-100">
-                <div className="min-w-0">
-                  <p className="text-[10px] text-gray-400 mb-0.5">Domaine custom</p>
-                  <p className="text-xs text-violet-800 font-mono truncate">{cdUrl}</p>
-                </div>
-                <div className="flex gap-1 flex-shrink-0">
-                  <CopyButton text={cdUrl} />
-                  <a href={cdUrl} target="_blank" rel="noopener noreferrer"
-                    className="px-2 py-1 text-[11px] font-medium text-violet-700 border border-violet-200 rounded-lg hover:bg-violet-50 transition-colors">
-                    Voir
-                  </a>
-                </div>
-              </div>
-            );
-          })}
+          {/* Subdomain URL: asso.evoly.me/e/slug */}
+          <LinkRow label="Sous-domaine" url={subdomainUrl!} />
+
+          {/* Custom domains */}
+          {customDomains.map((cd) => (
+            <LinkRow
+              key={cd.domain}
+              label="Domaine custom"
+              url={`https://${cd.domain}/e/${event.slug}`}
+            />
+          ))}
         </div>
       )}
 
@@ -226,6 +206,24 @@ function KpiCard({ label, value, sub }: { label: string; value: string; sub?: st
       <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">{label}</p>
       <p className="text-xl font-bold text-gray-900 mt-1">{value}</p>
       {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+    </div>
+  );
+}
+
+function LinkRow({ label, url }: { label: string; url: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 bg-white rounded-lg px-3 py-2 border border-violet-100">
+      <div className="min-w-0">
+        <p className="text-[10px] text-gray-400 mb-0.5">{label}</p>
+        <p className="text-xs text-violet-800 font-mono truncate">{url}</p>
+      </div>
+      <div className="flex gap-1 flex-shrink-0">
+        <CopyButton text={url} />
+        <a href={url} target="_blank" rel="noopener noreferrer"
+          className="px-2 py-1 text-[11px] font-medium text-violet-700 border border-violet-200 rounded-lg hover:bg-violet-50 transition-colors">
+          Voir
+        </a>
+      </div>
     </div>
   );
 }

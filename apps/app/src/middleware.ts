@@ -32,19 +32,19 @@ export default auth(async (req) => {
 		!hostWithoutPort.endsWith(`.${appHost}`)
 	) {
 		// Paths that must be accessible on all subdomains — never rewrite them
-		const BYPASS_PATHS = [
-			"/confirmation/",
-			"/tickets/",
-			"/refund/",
-			"/resale/",
-			"/verify/",
-			"/invite/",
+		const BYPASS_PREFIXES = [
+			"/confirmation",
+			"/tickets",
+			"/refund",
+			"/resale",
+			"/verify",
+			"/invite",
 			"/unsubscribe",
 			"/cd/",
 			"/o/",
 			"/e/",
 		];
-		if (BYPASS_PATHS.some((p) => pathname.startsWith(p))) {
+		if (BYPASS_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
 			return NextResponse.next();
 		}
 

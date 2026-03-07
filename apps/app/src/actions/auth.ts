@@ -20,6 +20,8 @@ export async function registerAction(formData: FormData) {
     password: formData.get("password"),
     name: formData.get("name"),
   };
+  // Optional invite token — if valid, skip email verification
+  const inviteToken = formData.get("inviteToken") as string | null;
 
   const parsed = registerSchema.safeParse(raw);
   if (!parsed.success) {
@@ -34,18 +36,38 @@ export async function registerAction(formData: FormData) {
     return { error: "Un compte existe déjà avec cet email." };
   }
 
+  // If an invite token is provided, validate it and mark email as verified immediately
+  let inviteIsValid = false;
+  if (inviteToken) {
+    const invitation = await db.invitation.findUnique({ where: { token: inviteToken } });
+    if (
+      invitation &&
+      invitation.status === "PENDING" &&
+      invitation.expiresAt >= new Date() &&
+      invitation.email.toLowerCase() === email.toLowerCase()
+    ) {
+      inviteIsValid = true;
+    }
+  }
+
   const passwordHash = await bcrypt.hash(password, 12);
 
-  // Create user without emailVerified
   const user = await db.user.create({
     data: {
       email,
       name,
       passwordHash,
+      // Skip email verification if coming from a valid invitation
+      emailVerified: inviteIsValid ? new Date() : null,
     },
   });
 
-  // Generate verification token
+  if (inviteIsValid) {
+    // No verification email needed — return userId so the client can sign in directly
+    return { success: true, userId: user.id, emailVerified: true };
+  }
+
+  // Standard flow: send verification email
   const token = crypto.randomBytes(32).toString("hex");
   const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
 
@@ -57,7 +79,6 @@ export async function registerAction(formData: FormData) {
     },
   });
 
-  // Send verification email
   const verificationUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${token}`;
 
   const html = await render(

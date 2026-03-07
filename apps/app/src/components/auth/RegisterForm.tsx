@@ -30,6 +30,11 @@ export function RegisterForm({ inviteToken, prefillEmail }: Props) {
 			return;
 		}
 
+		// Inject invite token so registerAction can validate & skip email verification
+		if (inviteToken) {
+			formData.set("inviteToken", inviteToken);
+		}
+
 		startTransition(async () => {
 			const result = await registerAction(formData);
 
@@ -38,8 +43,8 @@ export function RegisterForm({ inviteToken, prefillEmail }: Props) {
 				return;
 			}
 
-			// Si on a un token d'invitation, on se connecte directement puis on accepte
-			if (inviteToken) {
+			// If email is already verified (invite flow), sign in and accept invitation
+			if (inviteToken && result.emailVerified) {
 				const signInResult = await signIn("credentials", {
 					email: formData.get("email") as string,
 					password,
@@ -51,10 +56,10 @@ export function RegisterForm({ inviteToken, prefillEmail }: Props) {
 						router.push(`/dashboard/${acceptResult.orgSlug}`);
 						return;
 					}
+					// Accepted but no orgSlug somehow — go to dashboard
+					router.push("/dashboard");
+					return;
 				}
-				// Fallback : aller sur la page d'invitation
-				router.push(`/invite/${inviteToken}`);
-				return;
 			}
 
 			setSuccess(true);

@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@evoly/db";
 import { ScannerLinksManager } from "@/components/events/ScannerLinksManager";
+import { OpenScannerButton } from "@/components/events/OpenScannerButton";
 
 export default async function EventCheckinPage({
   params,
@@ -22,7 +23,6 @@ export default async function EventCheckinPage({
   });
   if (!event) redirect(`/dashboard/${orgSlug}/events`);
 
-  // Check-in stats
   const [totalTickets, checkedIn] = await Promise.all([
     db.ticket.count({ where: { order: { eventId: event.id }, status: "ACTIVE" } }),
     db.ticket.count({ where: { order: { eventId: event.id }, checkedIn: true } }),
@@ -41,6 +41,7 @@ export default async function EventCheckinPage({
   });
 
   const canManage = membership?.role.permissions.includes("EVENTS_EDIT") ?? false;
+  const userName = session.user.name ?? session.user.email ?? "Organisateur";
 
   return (
     <div className="p-6 space-y-6">
@@ -76,24 +77,24 @@ export default async function EventCheckinPage({
         </div>
       </div>
 
-      {/* Scanner link to app */}
-      <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 space-y-3">
+      {/* Direct scanner access */}
+      <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 space-y-2">
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-violet-900">Scanner QR — Accès direct</p>
-            <p className="text-xs text-violet-600">Ouvrez le scanner sur votre téléphone en tant qu&apos;organisateur connecté</p>
+            <p className="text-xs text-violet-600">
+              Génère un lien de scan personnel (24h) et l&apos;ouvre directement
+            </p>
           </div>
-          <a
-            href={`${process.env.NEXT_PUBLIC_SCANNER_URL ?? "https://scanner.evoly.me"}?eventId=${event.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
-          >
-            Ouvrir le scanner →
-          </a>
+          <OpenScannerButton
+            eventId={event.id}
+            organizationId={org.id}
+            userName={userName}
+            scannerUrl={process.env.NEXT_PUBLIC_SCANNER_URL ?? "https://scanner.evoly.me"}
+          />
         </div>
         <p className="text-[11px] text-violet-500">
-          Ce lien utilise votre session connectée. Pour les bénévoles sans compte Evoly, générez un lien temporaire ci-dessous.
+          Pour les bénévoles sans compte Evoly, générez un lien temporaire ci-dessous.
         </p>
       </div>
 
