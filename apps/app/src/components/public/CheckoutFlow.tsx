@@ -511,6 +511,7 @@ function StripePaymentForm({
   const elements = useElements();
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [stripeReady, setStripeReady] = useState(false);
 
   async function handlePay() {
     if (!stripe || !elements) return;
@@ -579,6 +580,7 @@ function StripePaymentForm({
 
         {/* Stripe PaymentElement — handles card, Apple Pay, Google Pay automatically */}
         <PaymentElement
+          onReady={() => setStripeReady(true)}
           options={{
             layout: "tabs",
             paymentMethodOrder: ["apple_pay", "google_pay", "card"],
@@ -594,7 +596,7 @@ function StripePaymentForm({
         <button
           type="button"
           onClick={handlePay}
-          disabled={processing || !stripe || !elements}
+          disabled={processing || !stripe || !elements || !stripeReady}
           className="w-full py-3 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
         >
           {processing && (
@@ -603,7 +605,7 @@ function StripePaymentForm({
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
           )}
-          {processing ? "Traitement en cours..." : `Payer ${(total / 100).toFixed(2)}€`}
+          {processing ? "Traitement en cours..." : !stripeReady ? "Chargement..." : `Payer ${(total / 100).toFixed(2)}€`}
         </button>
       </div>
     </div>

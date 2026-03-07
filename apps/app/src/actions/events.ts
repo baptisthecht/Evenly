@@ -16,8 +16,8 @@ const step1Schema = z.object({
   description: z.string().optional(),
   startsAt: z.string().min(1, "La date de début est requise"),
   startsAtTime: z.string().min(1, "L'heure de début est requise"),
-  endsAt: z.string().optional(),
-  endsAtTime: z.string().optional(),
+  endsAt: z.string().nullable().optional(),
+  endsAtTime: z.string().nullable().optional(),
   timezone: z.string().default("Europe/Paris"),
 });
 
@@ -27,7 +27,7 @@ const step2Schema = z.object({
   locationAddress: z.string().optional(),
   locationLat: z.coerce.number().optional(),
   locationLng: z.coerce.number().optional(),
-  streamUrl: z.string().url("URL invalide").optional().or(z.literal("")),
+  streamUrl: z.string().url("URL invalide").optional().or(z.literal("")).nullable().optional(),
 });
 
 // ─────────────────────────────────────────
@@ -307,8 +307,8 @@ const updateSettingsSchema = z.object({
   description: z.string().optional(),
   startsAt: z.string().optional(),
   startsAtTime: z.string().optional(),
-  endsAt: z.string().optional(),
-  endsAtTime: z.string().optional(),
+  endsAt: z.string().nullable().optional(),
+  endsAtTime: z.string().nullable().optional(),
   refundPolicy: z.enum(["NON_REFUNDABLE", "ORGANIZER_DEFINED", "ALWAYS_REFUNDABLE"]).optional(),
   refundDeadlineDays: z.coerce.number().int().min(0).optional(),
   visibility: z.enum(["PUBLIC", "UNLISTED"]).optional(),
