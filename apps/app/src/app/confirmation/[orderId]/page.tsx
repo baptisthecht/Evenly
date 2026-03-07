@@ -10,7 +10,7 @@ export default async function ConfirmationPage({
 	const { orderId } = await params;
 
 	const order = await db.order.findUnique({
-		where: { id: orderId, status: "COMPLETED" },
+		where: { id: orderId },
 		include: {
 			event: {
 				select: {
@@ -39,6 +39,45 @@ export default async function ConfirmationPage({
 	});
 
 	if (!order) notFound();
+
+	// Order still PENDING: webhook not yet received, show processing state
+	if (order.status === "PENDING") {
+		return (
+			<div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+				<div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-md w-full text-center space-y-4">
+					<div className="w-14 h-14 bg-violet-100 rounded-full flex items-center justify-center mx-auto">
+						<svg className="animate-spin w-6 h-6 text-violet-600" fill="none" viewBox="0 0 24 24">
+							<circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+							<path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+						</svg>
+					</div>
+					<h1 className="text-lg font-semibold text-gray-900">Paiement en cours de traitement…</h1>
+					<p className="text-sm text-gray-500">
+						Votre paiement a été reçu. Vos billets vous seront envoyés par email dans quelques instants.
+					</p>
+					<meta httpEquiv="refresh" content="5" />
+				</div>
+			</div>
+		);
+	}
+
+	if (order.status === "CANCELLED") {
+		return (
+			<div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+				<div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-md w-full text-center space-y-4">
+					<div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+						<svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+						</svg>
+					</div>
+					<h1 className="text-lg font-semibold text-gray-900">Paiement échoué</h1>
+					<p className="text-sm text-gray-500">
+						Votre paiement n&apos;a pas pu être traité. Aucun montant n&apos;a été débité.
+					</p>
+				</div>
+			</div>
+		);
+	}
 
 	const event = order.event;
 	const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.me";

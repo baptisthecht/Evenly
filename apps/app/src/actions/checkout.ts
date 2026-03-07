@@ -1,6 +1,7 @@
 "use server";
 
 import { db } from "@evoly/db";
+import { stripe } from "@/lib/stripe";
 import { z } from "zod";
 import { resend } from "@/lib/resend";
 import { OrderConfirmationEmail } from "@evoly/email";
@@ -320,14 +321,32 @@ export async function createPaymentIntentAction(data: unknown) {
 		},
 	});
 
-	// Create Stripe PaymentIntent
-	// NOTE: Stripe integration complète en Phase 5
-	// Pour l'instant on retourne les infos nécessaires au client
+	// Create Stripe PaymentIntent with application_fee_amount
+	const paymentIntent = await stripe.paymentIntents.create({
+		amount: total,
+		currency: "eur",
+		application_fee_amount: fees,
+		transfer_data: {
+			destination: event.organization.stripeAccountId,
+		},
+		metadata: {
+			orderId: order.id,
+			eventId,
+		},
+		automatic_payment_methods: { enabled: true },
+	});
+
+	// Link PaymentIntent to order
+	await db.order.update({
+		where: { id: order.id },
+		data: { stripePaymentIntentId: paymentIntent.id },
+	});
+
 	return {
 		success: true,
 		orderId: order.id,
 		totalCents: total,
 		feesCents: fees,
-		// stripeClientSecret: paymentIntent.client_secret  ← Phase 5
+		clientSecret: paymentIntent.client_secret,
 	};
 }
