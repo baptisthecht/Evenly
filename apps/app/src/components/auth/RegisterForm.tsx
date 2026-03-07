@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react";
 import { signIn } from "next-auth/react";
 import { registerAction } from "@/actions/auth";
-import { acceptInvitationAction } from "@/actions/members";
 import { useRouter } from "next/navigation";
 
 interface Props {
@@ -43,7 +42,7 @@ export function RegisterForm({ inviteToken, prefillEmail }: Props) {
 				return;
 			}
 
-			// If email is already verified (invite flow), sign in and accept invitation
+			// Invite flow: email already verified — sign in then let /invite page accept
 			if (inviteToken && result.emailVerified) {
 				const signInResult = await signIn("credentials", {
 					email: formData.get("email") as string,
@@ -51,15 +50,14 @@ export function RegisterForm({ inviteToken, prefillEmail }: Props) {
 					redirect: false,
 				});
 				if (signInResult?.ok) {
-					const acceptResult = await acceptInvitationAction(inviteToken);
-					if (acceptResult.success && acceptResult.orgSlug) {
-						router.push(`/dashboard/${acceptResult.orgSlug}`);
-						return;
-					}
-					// Accepted but no orgSlug somehow — go to dashboard
-					router.push("/dashboard");
+					// Hard redirect so NextAuth session cookie is fully committed
+					// before /invite/[token] server component runs acceptInvitationAction
+					window.location.href = `/invite/${inviteToken}`;
 					return;
 				}
+				// signIn failed unexpectedly — show generic error
+				setError("Connexion automatique échouée. Connectez-vous manuellement.");
+				return;
 			}
 
 			setSuccess(true);

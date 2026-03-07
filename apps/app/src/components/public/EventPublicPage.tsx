@@ -194,15 +194,8 @@ export function EventPublicPage({ event, otherEvents }: Props) {
           {/* Right column — ticket selector */}
           <div className="mt-6 lg:mt-0">
             <div className="sticky top-20">
-              {showCheckout ? (
-                <CheckoutFlow
-                  event={event}
-                  quantities={quantities}
-                  onQuantityChange={setQuantities}
-                  onBack={() => setShowCheckout(false)}
-                  onSuccess={(orderId, magicToken) => setOrderComplete({ orderId, magicToken })}
-                />
-              ) : (
+              {/* Both components stay mounted — CSS visibility prevents quantity state loss */}
+              <div className={showCheckout ? "hidden" : ""}>
                 <TicketSelector
                   event={event}
                   canBuy={canBuy}
@@ -211,7 +204,16 @@ export function EventPublicPage({ event, otherEvents }: Props) {
                   onQuantityChange={setQuantities}
                   onContinue={() => setShowCheckout(true)}
                 />
-              )}
+              </div>
+              <div className={showCheckout ? "" : "hidden"}>
+                <CheckoutFlow
+                  event={event}
+                  quantities={quantities}
+                  onQuantityChange={setQuantities}
+                  onBack={() => setShowCheckout(false)}
+                  onSuccess={(orderId, magicToken) => setOrderComplete({ orderId, magicToken })}
+                />
+              </div>
             </div>
           </div>
         </div>
