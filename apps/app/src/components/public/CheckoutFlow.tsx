@@ -309,7 +309,7 @@ export function CheckoutFlow({
               </button>
             ) : clientSecret && orderId ? (
               <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: "stripe", variables: { colorPrimary: "#7c3aed" } }, locale: "fr" }}>
-                <StripeForm clientSecret={clientSecret} orderId={orderId} total={total} onSuccess={onSuccess} />
+                <StripeForm clientSecret={clientSecret} orderId={orderId} total={total} />
               </Elements>
             ) : (
               <div className="w-full py-3 bg-violet-200 rounded-xl flex items-center justify-center gap-2 text-violet-500 text-sm">
@@ -329,15 +329,18 @@ export function CheckoutFlow({
 
 // ─── Stripe form (inside <Elements>) ─────────────────────────────────────────
 
-function StripeForm({ clientSecret, orderId, total, onSuccess }: {
+function StripeForm({ clientSecret, orderId, total }: {
   clientSecret: string; orderId: string; total: number;
-  onSuccess: (orderId: string, magicToken: string) => void;
 }) {
   const stripe = useStripe();
   const elements = useElements();
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.me";
+  // ready = PaymentElement a fini de se monter
+  const [ready, setReady] = useState(false);
+  const appUrl = typeof window !== "undefined"
+    ? window.location.origin
+    : (process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.me");
 
   async function handlePay() {
     if (!stripe || !elements) return;
@@ -348,17 +351,21 @@ function StripeForm({ clientSecret, orderId, total, onSuccess }: {
       elements, clientSecret,
       confirmParams: { return_url: `${appUrl}/confirmation/${orderId}` },
     });
-    if (confirmError) setError(confirmError.message ?? "Paiement refusé.");
-    setProcessing(false);
+    if (confirmError) { setError(confirmError.message ?? "Paiement refusé."); setProcessing(false); }
+    // Si pas d'erreur → Stripe redirige vers return_url, pas besoin de setProcessing(false)
   }
 
   return (
     <div className="space-y-3">
-      {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{error}</div>}
+      {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700" role="alert">{error}</div>}
 
-      {/* Express checkout (Apple Pay / Google Pay) */}
+      {/* Express checkout (Apple Pay / Google Pay) — affiché seulement si dispo sur l'appareil */}
       <ExpressCheckoutElement
-        onConfirm={async (e) => {
+        onReady={({ availablePaymentMethods }) => {
+          // Ne montrer le séparateur que si au moins un moyen express est dispo
+          if (availablePaymentMethods) setReady(true);
+        }}
+        onConfirm={async () => {
           if (!stripe || !elements) return;
           const { error } = await stripe.confirmPayment({
             elements, clientSecret,
@@ -375,10 +382,13 @@ function StripeForm({ clientSecret, orderId, total, onSuccess }: {
         <div className="flex-1 h-px bg-gray-200" />
       </div>
 
-      <PaymentElement options={{ layout: "tabs" }} />
+      <PaymentElement
+        onReady={() => setReady(true)}
+        options={{ layout: "tabs" }}
+      />
 
       <button type="button" onClick={handlePay}
-        disabled={processing || !stripe || !elements}
+        disabled={processing || !ready}
         className="w-full py-3 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
         {processing && <Spinner />}
         {processing ? "Traitement…" : `Payer ${(total / 100).toFixed(2)}€`}
