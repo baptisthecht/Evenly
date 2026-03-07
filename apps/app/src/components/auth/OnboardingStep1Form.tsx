@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { checkSlugAvailability, onboardingStep1Action } from "@/actions/auth";
-import { acceptInvitationByCodeAction } from "@/actions/members";
+import { acceptInvitationByCodeAction, checkInviteCodeAction } from "@/actions/members";
 
 function slugify(text: string): string {
 	return text
@@ -264,5 +264,3 @@ export function OnboardingStep1Form({ userId }: { userId: string }) {
 	);
 }
 
-// Server action proxy — called inline to check code validity before submit
-import { checkInviteCodeAction } from "@/actions/members";

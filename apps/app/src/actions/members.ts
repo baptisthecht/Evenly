@@ -381,3 +381,95 @@ export async function deleteRoleAction(roleId: string, organizationId: string) {
 	revalidatePath(`/dashboard`);
 	return { success: true };
 }
+
+// ─────────────────────────────────────────
+// INVITE CODE — Rejoindre via code court (onboarding)
+// ─────────────────────────────────────────
+
+// Vérifie si un code court (8 premiers chars du token en majuscules) est valide
+export async function checkInviteCodeAction(code: string) {
+	const invitation = await db.invitation.findFirst({
+		where: {
+			status: "PENDING",
+			expiresAt: { gt: new Date() },
+		},
+		select: {
+			token: true,
+			organization: { select: { name: true } },
+		},
+	});
+
+	// Chercher parmi toutes les invitations valides celle dont le code correspond
+	const allInvitations = await db.invitation.findMany({
+		where: {
+			status: "PENDING",
+			expiresAt: { gt: new Date() },
+		},
+		select: {
+			token: true,
+			organization: { select: { name: true } },
+		},
+	});
+
+	const match = allInvitations.find(
+		(inv) => inv.token.substring(0, 8).toUpperCase() === code.substring(0, 8).toUpperCase()
+	);
+
+	if (!match) return { valid: false };
+	return { valid: true, orgName: match.organization.name };
+}
+
+// Accepte une invitation via code court — appelé après connexion/inscription
+export async function acceptInvitationByCodeAction(code: string) {
+	const session = await auth();
+	if (!session?.user) return { error: "Non authentifié." };
+
+	const allInvitations = await db.invitation.findMany({
+		where: {
+			status: "PENDING",
+			expiresAt: { gt: new Date() },
+		},
+		include: {
+			organization: {
+				select: { id: true, slug: true },
+			},
+		},
+	});
+
+	const invitation = allInvitations.find(
+		(inv) => inv.token.substring(0, 8).toUpperCase() === code.substring(0, 8).toUpperCase()
+	);
+
+	if (!invitation) return { error: "Code invalide ou expiré." };
+	if (invitation.email.toLowerCase() !== session.user.email?.toLowerCase()) {
+		return { error: "Ce code d'invitation ne correspond pas à votre adresse email." };
+	}
+
+	// Check user not already member
+	const existing = await db.organizationMember.findUnique({
+		where: {
+			organizationId_userId: {
+				organizationId: invitation.organizationId,
+				userId: session.user.id,
+			},
+		},
+	});
+	if (existing) return { error: "Vous êtes déjà membre de cette organisation." };
+
+	await db.$transaction([
+		db.organizationMember.create({
+			data: {
+				organizationId: invitation.organizationId,
+				userId: session.user.id,
+				roleId: invitation.roleId,
+			},
+		}),
+		db.invitation.update({
+			where: { id: invitation.id },
+			data: { status: "ACCEPTED" },
+		}),
+	]);
+
+	revalidatePath("/dashboard");
+	return { success: true, orgSlug: invitation.organization.slug };
+}
