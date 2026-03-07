@@ -48,7 +48,6 @@ interface Props {
 }
 
 export function EventPublicPage({ event, otherEvents }: Props) {
-  const [showCheckout, setShowCheckout] = useState(false);
   const [orderComplete, setOrderComplete] = useState<{ orderId: string; magicToken: string } | null>(null);
   // Shared quantities state — lives here so CheckoutFlow receives what TicketSelector set
   const [quantities, setQuantities] = useState<Record<string, number>>({});
@@ -191,45 +190,22 @@ export function EventPublicPage({ event, otherEvents }: Props) {
             )}
           </div>
 
-          {/* Right column — ticket selector */}
+          {/* Right column — unified checkout */}
           <div className="mt-6 lg:mt-0">
             <div className="sticky top-20">
-              {/* Both components stay mounted — CSS visibility prevents quantity state loss */}
-              <div className={showCheckout ? "hidden" : ""}>
-                <TicketSelector
-                  event={event}
-                  canBuy={canBuy}
-                  stripeConnected={stripeConnected}
-                  quantities={quantities}
-                  onQuantityChange={setQuantities}
-                  onContinue={() => setShowCheckout(true)}
-                />
-              </div>
-              <div className={showCheckout ? "" : "hidden"}>
-                <CheckoutFlow
-                  event={event}
-                  quantities={quantities}
-                  onQuantityChange={setQuantities}
-                  onBack={() => setShowCheckout(false)}
-                  onSuccess={(orderId, magicToken) => setOrderComplete({ orderId, magicToken })}
-                />
-              </div>
+              <CheckoutFlow
+                event={event}
+                quantities={quantities}
+                onQuantityChange={setQuantities}
+                onBack={() => {}}
+                onSuccess={(orderId, magicToken) => setOrderComplete({ orderId, magicToken })}
+              />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Mobile sticky CTA */}
-      {!showCheckout && canBuy && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40">
-          <button
-            onClick={() => setShowCheckout(true)}
-            className="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-xl transition-colors"
-          >
-            Voir les billets
-          </button>
-        </div>
-      )}
+
     </div>
   );
 }
