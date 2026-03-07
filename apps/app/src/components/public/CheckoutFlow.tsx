@@ -87,16 +87,15 @@ export function CheckoutFlow({
   const buyerInfoFilled = firstName.trim() && lastName.trim() && email.trim() && email.includes("@");
   const showPaymentSection = totalItems > 0 && buyerInfoFilled;
 
-  // Dès que les infos acheteur sont remplies + tickets sélectionnés + commande payante
-  // → créer le PaymentIntent en arrière-plan pour que Stripe Elements soit prêt
-  const piRef = useRef<string | null>(null); // évite les doublons
+  // Créer le PaymentIntent UNE SEULE FOIS quand les infos sont complètes.
+  // On ne recrée jamais tant que clientSecret est déjà set — Elements doit rester monté.
+  const piCreating = useRef(false);
   useEffect(() => {
-    if (!showPaymentSection || isFreeOrder || !firstName || !lastName || !email) return;
-    if (piRef.current === `${total}-${email}`) return; // même commande, pas de recréation
-    setClientSecret(null);
-    setOrderId(null);
+    if (!showPaymentSection || isFreeOrder) return;
+    if (clientSecret) return; // déjà créé, ne pas remonter Elements
+    if (piCreating.current) return;
+    piCreating.current = true;
     setLoadingPI(true);
-    piRef.current = `${total}-${email}`;
 
     createPaymentIntentAction({
       eventId: event.id,
@@ -112,13 +111,15 @@ export function CheckoutFlow({
       })),
     }).then((result) => {
       setLoadingPI(false);
+      piCreating.current = false;
       if (result.clientSecret && result.orderId) {
         setClientSecret(result.clientSecret);
         setOrderId(result.orderId);
       }
     });
+  // showPaymentSection devient true une seule fois quand les champs sont remplis
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showPaymentSection, total, email, isFreeOrder]);
+  }, [showPaymentSection]);
 
   async function handlePromoCode() {
     setPromoLoading(true); setPromoError(null);
@@ -361,9 +362,9 @@ function StripeForm({ clientSecret, orderId, total }: {
 
       {/* Express checkout (Apple Pay / Google Pay) — affiché seulement si dispo sur l'appareil */}
       <ExpressCheckoutElement
-        onReady={({ availablePaymentMethods }) => {
-          // Ne montrer le séparateur que si au moins un moyen express est dispo
-          if (availablePaymentMethods) setReady(true);
+        onReady={() => {
+          // onReady fire toujours — le bouton est caché par Stripe lui-même si indispo
+          // Ne PAS conditionner setReady ici car PaymentElement s'en charge
         }}
         onConfirm={async () => {
           if (!stripe || !elements) return;
@@ -383,9 +384,21 @@ function StripeForm({ clientSecret, orderId, total }: {
       </div>
 
       <PaymentElement
-        onReady={() => setReady(true)}
+        onReady={() => {
+          console.log("[Stripe] PaymentElement onReady fired");
+          setReady(true);
+        }}
+        onChange={(e) => {
+          console.log("[Stripe] PaymentElement onChange", e.complete, e.empty);
+        }}
         options={{ layout: "tabs" }}
       />
+      {/* DEBUG — à retirer en prod */}
+      {process.env.NODE_ENV === "development" && (
+        <p className="text-xs text-gray-400">
+          stripe={stripe ? "✓" : "✗"} elements={elements ? "✓" : "✗"} ready={ready ? "✓" : "✗"}
+        </p>
+      )}
 
       <button type="button" onClick={handlePay}
         disabled={processing || !ready}
