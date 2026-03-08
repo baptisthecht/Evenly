@@ -787,7 +787,7 @@ enum NotificationType {
 model Referral {
   id             String        @id @default(cuid())
   referrerOrgId  String        // parrain (org qui partage le lien)
-  referredOrgId  String?       // filleul (org créée via ce lien)
+  referredOrgId  String? @unique      // filleul (org créée via ce lien)
   code           String        @unique // ex: "ASSO-MON-CLUB-XK9"
   status         ReferralStatus @default(PENDING)
 
