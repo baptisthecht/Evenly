@@ -26,7 +26,7 @@ export default async function MagicTicketsPage({
 			},
 			tickets: {
 				where: { status: { in: ["ACTIVE", "USED"] } },
-				include: { seat: true },
+				include: { seat: true, resaleLink: true },
 			},
 			items: true,
 		},

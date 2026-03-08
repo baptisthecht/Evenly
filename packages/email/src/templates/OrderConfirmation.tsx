@@ -215,7 +215,7 @@ const cardTitle: React.CSSProperties = {
 };
 
 const button: React.CSSProperties = {
-	backgroundColor: primaryColor,
+	backgroundColor: "#7c3aed",
 	color: "#ffffff",
 	borderRadius: 12,
 	padding: "12px 28px",
