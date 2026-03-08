@@ -135,7 +135,6 @@ export async function getResaleLinkAction(token: string) {
               },
             },
           },
-          order: { select: { items: { include: { _count: false } } } },
         },
       },
     },
