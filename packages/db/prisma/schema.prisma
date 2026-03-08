@@ -111,6 +111,9 @@ model Organization {
   emailTemplates EmailTemplate[]
   unsubscribes   EmailUnsubscribe[]
   notifications  Notification[]
+  brand          OrganizationBrand?
+  referralsSent  Referral[]         @relation("ReferralsSent")
+  referralReceived Referral?        @relation("ReferralReceived")
 }
 
 enum OrgType {
@@ -503,8 +506,9 @@ model Ticket {
 
   createdAt DateTime @default(now())
 
-  order Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  seat  Seat?  @relation(fields: [seatId], references: [id])
+  order      Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  seat       Seat?        @relation(fields: [seatId], references: [id])
+  resaleLink ResaleLink?
 }
 
 enum TicketStatus {
@@ -512,6 +516,45 @@ enum TicketStatus {
   USED
   CANCELLED
   REFUNDED
+}
+
+// ─────────────────────────────────────────
+// REVENTE SÉCURISÉE
+// ─────────────────────────────────────────
+
+model ResaleLink {
+  id       String @id @default(cuid())
+  ticketId String @unique
+  token    String @unique @default(cuid())
+
+  // Prix demandé par le vendeur (plafonné à 2x prix original)
+  priceCents     Int
+  originalPriceCents Int
+
+  status ResaleLinkStatus @default(OPEN)
+
+  // Acheteur final
+  buyerEmail     String?
+  buyerFirstName String?
+  buyerLastName  String?
+  stripePaymentIntentId String? @unique
+
+  expiresAt DateTime  // auto: event startsAt - 2h
+  soldAt    DateTime?
+  cancelledAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}
+
+enum ResaleLinkStatus {
+  OPEN       // disponible à l'achat
+  PENDING    // paiement en cours (PI créé)
+  SOLD       // vendu, ancien ticket invalidé, nouveau créé
+  CANCELLED  // annulé par le vendeur
+  EXPIRED    // expiré (event passé ou délai dépassé)
 }
 
 model RefundRequest {
@@ -735,4 +778,53 @@ enum NotificationType {
   QUOTA_ALERT
   PAYOUT_FAILED
   EVENT_CANCELLED
+}
+
+// ─────────────────────────────────────────
+// PARRAINAGE B2B
+// ─────────────────────────────────────────
+
+model Referral {
+  id             String        @id @default(cuid())
+  referrerOrgId  String        // parrain (org qui partage le lien)
+  referredOrgId  String?       // filleul (org créée via ce lien)
+  code           String        @unique // ex: "ASSO-MON-CLUB-XK9"
+  status         ReferralStatus @default(PENDING)
+
+  // Récompense
+  rewardGrantedAt DateTime?    // quand le crédit a été accordé
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  referrerOrg Organization @relation("ReferralsSent", fields: [referrerOrgId], references: [id])
+  referredOrg Organization? @relation("ReferralReceived", fields: [referredOrgId], references: [id])
+}
+
+enum ReferralStatus {
+  PENDING     // lien créé, filleul pas encore inscrit
+  REGISTERED  // filleul inscrit mais pas encore fait une vente payante
+  REWARDED    // 1ère vente payante du filleul → 1 mois Pro offert au parrain
+}
+
+model OrganizationBrand {
+  id             String  @id @default(cuid())
+  organizationId String  @unique
+
+  // Identity
+  brandName      String?  // displayed instead of "evoly" in UI
+  logoUrl        String?  // R2 URL — replaces Evoly logo
+  faviconUrl     String?  // R2 URL — replaces Evoly favicon
+
+  // Colors (hex)
+  primaryColor   String?  // default #7c3aed
+  accentColor    String?  // default #a78bfa
+
+  // Email sender
+  fromName       String?  // "Les Événements de MonAsso" — used in Resend
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }

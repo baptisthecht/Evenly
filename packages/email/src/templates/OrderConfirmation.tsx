@@ -22,6 +22,13 @@ interface OrderConfirmationEmailProps {
 	magicToken: string;
 	appUrl?: string;
 	confirmationMessage?: string | null;
+	// Brand (Pro orgs with custom domain)
+	brand?: {
+		brandName?: string | null;
+		logoUrl?: string | null;
+		primaryColor?: string | null;
+		fromName?: string | null;
+	} | null;
 }
 
 export function OrderConfirmationEmail({
@@ -34,8 +41,11 @@ export function OrderConfirmationEmail({
 	magicToken,
 	appUrl = "https://app.evoly.me",
 	confirmationMessage,
+	brand,
 }: OrderConfirmationEmailProps) {
 	const ticketsUrl = `${appUrl}/tickets/${magicToken}`;
+	const primaryColor = brand?.primaryColor ?? "#7c3aed";
+	const displayName = brand?.brandName ?? "evoly";
 
 	return (
 		<Html>
@@ -51,11 +61,11 @@ export function OrderConfirmationEmail({
 							style={{
 								fontSize: 22,
 								fontWeight: 700,
-								color: "#7c3aed",
+								color: primaryColor,
 								margin: 0,
 							}}
 						>
-							evoly
+							{displayName}
 						</Text>
 					</Section>
 
@@ -205,7 +215,7 @@ const cardTitle: React.CSSProperties = {
 };
 
 const button: React.CSSProperties = {
-	backgroundColor: "#7c3aed",
+	backgroundColor: primaryColor,
 	color: "#ffffff",
 	borderRadius: 12,
 	padding: "12px 28px",

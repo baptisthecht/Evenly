@@ -39,6 +39,7 @@ async function getEvent(slug: string) {
 					slug: true,
 					logoUrl: true,
 					stripeAccountStatus: true,
+					brand: { select: { brandName: true, logoUrl: true, primaryColor: true, accentColor: true, fromName: true } },
 				},
 			},
 			ticketTypes: {

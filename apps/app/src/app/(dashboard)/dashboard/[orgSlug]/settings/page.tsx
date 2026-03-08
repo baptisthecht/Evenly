@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@evoly/db";
 import { OrgSettingsForm } from "@/components/settings/OrgSettingsForm";
+import Link from "next/link";
 
 export default async function SettingsPage({
   params,
@@ -37,6 +38,21 @@ export default async function SettingsPage({
 
   return (
     <div className="p-6 max-w-lg">
+      {/* Settings nav tabs */}
+      <div className="flex gap-2 mb-6 border-b border-gray-200">
+        <Link
+          href={`/dashboard/${orgSlug}/settings`}
+          className="pb-2 text-sm font-medium border-b-2 border-violet-600 text-violet-600"
+        >
+          Général
+        </Link>
+        <Link
+          href={`/dashboard/${orgSlug}/settings/brand`}
+          className="pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 ml-4"
+        >
+          Brand & Identité {org.planId !== "pro" && <span className="ml-1 text-xs text-violet-500">Pro</span>}
+        </Link>
+      </div>
       <OrgSettingsForm
         org={{
           id: org.id,

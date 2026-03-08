@@ -334,6 +334,13 @@ export async function onboardingStep1Action(
     return organization;
   });
 
+  // Apply referral code if present (fire-and-forget)
+  const refCode = formData.get("refCode");
+  if (refCode && typeof refCode === "string" && refCode.trim()) {
+    const { applyReferralCodeAction } = await import("@/actions/referral");
+    applyReferralCodeAction(refCode.trim(), org.id).catch(console.error);
+  }
+
   return { success: true, organizationId: org.id };
 }
 

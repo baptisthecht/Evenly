@@ -38,6 +38,13 @@ interface EventData {
     slug: string;
     logoUrl: string | null;
     stripeAccountStatus: string;
+    brand?: {
+      brandName: string | null;
+      logoUrl: string | null;
+      primaryColor: string | null;
+      accentColor: string | null;
+      fromName: string | null;
+    } | null;
   };
   ticketTypes: TicketType[];
 }
@@ -51,6 +58,13 @@ export function EventPublicPage({ event, otherEvents }: Props) {
   const [orderComplete, setOrderComplete] = useState<{ orderId: string; magicToken: string } | null>(null);
   // Shared quantities state — lives here so CheckoutFlow receives what TicketSelector set
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+
+  // Brand colors — fallback to Evoly defaults
+  const brand = event.organization.brand;
+  const primaryColor = brand?.primaryColor ?? "#7c3aed";
+  const accentColor = brand?.accentColor ?? "#a78bfa";
+  const brandLogo = brand?.logoUrl ?? event.organization.logoUrl;
+  const brandName = brand?.brandName ?? "evoly";
 
   const startDate = new Date(event.startsAt);
   const endDate = event.endsAt ? new Date(event.endsAt) : null;
@@ -79,16 +93,19 @@ export function EventPublicPage({ event, otherEvents }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div
+      className="min-h-screen bg-gray-50"
+      style={{ "--brand-primary": primaryColor, "--brand-accent": accentColor } as React.CSSProperties}
+    >
       {/* Navbar */}
       <nav className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-40">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <a href="/" className="flex items-center gap-2">
-            {event.organization.logoUrl ? (
+            {brandLogo ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={event.organization.logoUrl} alt={event.organization.name} className="h-7 w-auto" />
+              <img src={brandLogo} alt={event.organization.name} className="h-7 w-auto" />
             ) : (
-              <span className="font-bold text-violet-600 text-lg">evoly</span>
+              <span className="font-bold text-lg" style={{ color: primaryColor }}>{brandName}</span>
             )}
           </a>
           <span className="text-sm text-gray-500 hidden sm:block">{event.organization.name}</span>
@@ -96,7 +113,7 @@ export function EventPublicPage({ event, otherEvents }: Props) {
       </nav>
 
       {/* Banner */}
-      <div className="relative h-48 sm:h-64 lg:h-80 bg-gradient-to-br from-violet-600 to-violet-800 overflow-hidden">
+      <div className="relative h-48 sm:h-64 lg:h-80 overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${accentColor})` }}>
         {event.bannerUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={event.bannerUrl} alt="" className="w-full h-full object-cover" />
@@ -319,7 +336,8 @@ function TicketSelector({
           type="button"
           onClick={onContinue}
           disabled={totalItems === 0 || !canBuy}
-          className="w-full py-3 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white font-semibold rounded-xl transition-colors"
+          className="w-full py-3 disabled:opacity-40 text-white font-semibold rounded-xl transition-colors"
+          style={{ backgroundColor: "var(--brand-primary, #7c3aed)" }}
         >
           {totalItems === 0 ? "Sélectionnez des billets" : `Continuer · ${totalItems} billet${totalItems > 1 ? "s" : ""}`}
         </button>
@@ -350,8 +368,8 @@ function CountdownBanner({ startsAt }: { startsAt: string }) {
   }
 
   return (
-    <div className="bg-violet-600 rounded-2xl p-5 text-white text-center">
-      <p className="text-sm font-medium text-violet-200 mb-3">L&apos;événement commence dans</p>
+    <div className="rounded-2xl p-5 text-white text-center" style={{ backgroundColor: "var(--brand-primary, #7c3aed)" }}>
+      <p className="text-sm font-medium mb-3" style={{ color: "rgba(255,255,255,0.75)" }}>L&apos;événement commence dans</p>
       <div className="flex justify-center gap-4">
         {[{ v: days, l: "jours" }, { v: hours, l: "heures" }, { v: minutes, l: "min" }, { v: seconds, l: "sec" }].map(({ v, l }) => (
           <div key={l} className="text-center">
@@ -392,7 +410,8 @@ function OrderConfirmation({ magicToken, event }: { magicToken: string; event: E
 
         <a
           href={ticketsUrl}
-          className="block w-full py-3 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-xl transition-colors"
+          className="block w-full py-3 text-white font-semibold rounded-xl transition-colors"
+          style={{ backgroundColor: "var(--brand-primary, #7c3aed)" }}
         >
           Voir mes billets
         </a>

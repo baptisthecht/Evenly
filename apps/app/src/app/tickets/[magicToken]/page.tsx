@@ -1,6 +1,7 @@
 import { db } from "@evoly/db";
 import { notFound } from "next/navigation";
 import { generateQrDataUrl } from "@/lib/qrcode";
+import { ResaleButton } from "@/components/resale/ResaleButton";
 
 export default async function MagicTicketsPage({
 	params,
@@ -27,7 +28,7 @@ export default async function MagicTicketsPage({
 				where: { status: { in: ["ACTIVE", "USED"] } },
 				include: { seat: true },
 			},
-			items: true,
+			items: { include: { _count: false } },
 		},
 	});
 
@@ -169,7 +170,7 @@ export default async function MagicTicketsPage({
 											</span>
 										</div>
 									)}
-									<div className="mt-3">
+									<div className="mt-3 flex items-center gap-4">
 										<a
 											href={`${pdfUrl}&ticketId=${ticket.id}&print=1`}
 											target="_blank"
@@ -178,6 +179,15 @@ export default async function MagicTicketsPage({
 										>
 											📄 PDF individuel
 										</a>
+										{!ticket.checkedIn && ticket.status === "ACTIVE" && (
+											<ResaleButton
+												ticketId={ticket.id}
+												magicToken={magicToken}
+												originalPriceCents={order.items.find(item => item.id === ticket.orderItemId)?.unitPriceCents ?? 0}
+												eventStartsAt={event.startsAt.toISOString()}
+												existingResale={ticket.resaleLink ? { token: ticket.resaleLink.token, priceCents: ticket.resaleLink.priceCents, status: ticket.resaleLink.status, expiresAt: ticket.resaleLink.expiresAt.toISOString() } : null}
+											/>
+										)}
 									</div>
 								</div>
 

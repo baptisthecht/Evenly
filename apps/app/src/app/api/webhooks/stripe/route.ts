@@ -30,11 +30,83 @@ export async function POST(req: NextRequest) {
 
       case "payment_intent.succeeded": {
         const pi = event.data.object as any;
+
+        // ── Revente ──────────────────────────────────────────────
+        if (pi.metadata?.resaleLinkToken) {
+          const resaleLink = await db.resaleLink.findUnique({
+            where: { token: pi.metadata.resaleLinkToken },
+            include: {
+              ticket: {
+                include: {
+                  order: {
+                    include: {
+                      event: { select: { id: true, title: true, startsAt: true, locationName: true, organizationId: true } },
+                    },
+                  },
+                },
+              },
+            },
+          });
+
+          if (!resaleLink || resaleLink.status !== "PENDING") break;
+
+          // Invalidate old ticket, create new one with new QR
+          const newQrCode = crypto.randomUUID();
+          await db.$transaction(async (tx) => {
+            // Old ticket → CANCELLED
+            await tx.ticket.update({
+              where: { id: resaleLink.ticketId },
+              data: { status: "CANCELLED" },
+            });
+
+            // New ticket for buyer
+            const newTicket = await tx.ticket.create({
+              data: {
+                orderId: resaleLink.ticket.orderId,
+                orderItemId: resaleLink.ticket.orderItemId,
+                qrCode: newQrCode,
+                holderFirstName: resaleLink.buyerFirstName ?? "",
+                holderLastName: resaleLink.buyerLastName ?? "",
+                holderEmail: resaleLink.buyerEmail ?? "",
+                status: "ACTIVE",
+              },
+            });
+
+            // Mark resale as SOLD
+            await tx.resaleLink.update({
+              where: { id: resaleLink.id },
+              data: { status: "SOLD", soldAt: new Date() },
+            });
+
+            return newTicket;
+          });
+
+          // Send confirmation email to buyer
+          try {
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.me";
+            await resend.emails.send({
+              from: FROM_EMAIL,
+              to: resaleLink.buyerEmail!,
+              subject: `🎟️ Votre billet (revente) — ${resaleLink.ticket.order.event.title}`,
+              html: `<p>Bonjour ${resaleLink.buyerFirstName},</p>
+              <p>Votre achat de billet en revente pour <strong>${resaleLink.ticket.order.event.title}</strong> est confirmé !</p>
+              <p>📅 ${new Date(resaleLink.ticket.order.event.startsAt).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}</p>
+              <p>Votre QR code : <strong>${newQrCode}</strong></p>
+              <p style="margin-top:16px"><a href="${appUrl}/e/${resaleLink.ticket.order.event.id}" style="color:#7c3aed">Voir l'événement →</a></p>`,
+            });
+          } catch (emailErr) {
+            console.error("[Resale confirmation email error]", emailErr);
+          }
+
+          break;
+        }
+
+        // ── Billetterie classique ────────────────────────────────
         const order = await db.order.findFirst({
           where: { stripePaymentIntentId: pi.id },
           include: {
             items: true,
-            event: { include: { organization: true } },
+            event: { include: { organization: { include: { brand: true } } } },
           },
         });
         if (!order || order.status === "COMPLETED") break;
@@ -72,6 +144,20 @@ export async function POST(req: NextRequest) {
             where: { id: order.event.organizationId },
             data: { ticketsSoldThisMonth: { increment: totalQty } },
           });
+
+          // Referral reward — fire on first paid sale
+          const hasPaidItems = order.items.some((i) => i.unitPriceCents > 0);
+          if (hasPaidItems) {
+            const orgBefore = await tx.organization.findUnique({
+              where: { id: order.event.organizationId },
+              select: { ticketsSoldThisMonth: true },
+            });
+            // First paid sale = ticketsSoldThisMonth was 0 before this increment
+            if ((orgBefore?.ticketsSoldThisMonth ?? 0) === 0) {
+              const { triggerReferralRewardAction } = await import("@/actions/referral");
+              triggerReferralRewardAction(order.event.organizationId).catch(console.error);
+            }
+          }
 
           // Quota alerts
           const updatedOrg = await tx.organization.findUnique({
@@ -145,9 +231,11 @@ export async function POST(req: NextRequest) {
               magicToken: order.magicToken,
               appUrl,
               confirmationMessage: order.event.confirmationMessage ?? null,
+              brand: order.event.organization.brand ?? null,
             }));
+            const fromName = order.event.organization.brand?.fromName;
             await resend.emails.send({
-              from: FROM_EMAIL,
+              from: fromName ? `${fromName} <${FROM_EMAIL}>` : FROM_EMAIL,
               to: order.buyerEmail,
               subject: `🎟️ Vos billets pour ${order.event.title}`,
               html,
