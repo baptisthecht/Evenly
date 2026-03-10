@@ -6,4 +6,4 @@ ENV TZ=Europe/Paris
 
 COPY crontab /etc/crontabs/root
 
-CMD ["crond", "-f", "-l", "8"]
+CMD ["crond", "-f", "-l", "8", "-L", "/dev/stderr"]
