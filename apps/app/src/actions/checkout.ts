@@ -41,7 +41,7 @@ export async function validatePromoCodeAction(eventId: string, code: string) {
 
 const checkoutSchema = z.object({
 	eventId: z.string(),
-	buyerEmail: z.string().email(),
+	buyerEmail: z.string().min(1).refine(e => e.includes("@"), { message: "Email invalide" }),
 	buyerFirstName: z.string().min(1),
 	buyerLastName: z.string().min(1),
 	buyerPhone: z.string().optional().nullable(),
@@ -208,8 +208,15 @@ async function sendOrderConfirmationEmail(
 // ─────────────────────────────────────────
 
 export async function createPaymentIntentAction(data: unknown) {
+	try { return await _createPaymentIntentAction(data); }
+	catch (e) { console.error("[createPaymentIntentAction] CRASH:", e); return { error: String(e) }; }
+}
+async function _createPaymentIntentAction(data: unknown) {
 	const parsed = checkoutSchema.safeParse(data);
-	if (!parsed.success) return { error: "Données invalides." };
+	if (!parsed.success) {
+		console.error("[PI] Zod errors:", JSON.stringify(parsed.error.issues, null, 2));
+		return { error: "Données invalides.", details: parsed.error.issues };
+	}
 
 	const {
 		eventId,

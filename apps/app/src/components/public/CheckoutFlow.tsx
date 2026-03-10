@@ -84,20 +84,26 @@ export function CheckoutFlow({
   const total = discountedSubtotal + estimatedFees;
 
   const hasNominative = cartItems.some((i) => i.ticketType.isNominative);
+  // Affiche la section dès qu'il y a un @
   const buyerInfoFilled = firstName.trim() && lastName.trim() && email.trim() && email.includes("@");
   const showPaymentSection = totalItems > 0 && buyerInfoFilled;
+
+  // Email valide = a un @ et un . après le @
+  const emailValid = /^[^@]+@[^@]+\.[^@]{2,}$/.test(email.trim());
+  // Déclenche le PI seulement quand tout est vraiment complet
+  const buyerInfoComplete = !!(firstName.trim() && lastName.trim() && emailValid);
 
   // Créer le PaymentIntent UNE SEULE FOIS quand les infos sont complètes.
   // On ne recrée jamais tant que clientSecret est déjà set — Elements doit rester monté.
   const piCreating = useRef(false);
   useEffect(() => {
-    if (!showPaymentSection || isFreeOrder) return;
+    if (!buyerInfoComplete || !showPaymentSection || isFreeOrder) return;
     if (clientSecret) return; // déjà créé, ne pas remonter Elements
     if (piCreating.current) return;
     piCreating.current = true;
     setLoadingPI(true);
 
-    createPaymentIntentAction({
+    const payload = {
       eventId: event.id,
       buyerEmail: email,
       buyerFirstName: firstName,
@@ -109,17 +115,29 @@ export function CheckoutFlow({
         quantity: item.quantity,
         holderData: item.ticketType.isNominative ? (holderData[item.ticketTypeId] ?? []) : undefined,
       })),
-    }).then((result) => {
+    };
+    console.log("[PI payload]", JSON.stringify(payload, null, 2));
+    createPaymentIntentAction(payload).then((result) => {
       setLoadingPI(false);
       piCreating.current = false;
+      console.log("[PI result]", result);
+      if ("error" in result && result.error) {
+        setError(result.error as string);
+        return;
+      }
       if (result.clientSecret && result.orderId) {
         setClientSecret(result.clientSecret);
         setOrderId(result.orderId);
       }
+    }).catch((err) => {
+      setLoadingPI(false);
+      piCreating.current = false;
+      console.error("[PI error]", err);
+      setError("Erreur lors de la préparation du paiement.");
     });
-  // showPaymentSection devient true une seule fois quand les champs sont remplis
+  // Déclenché quand buyerInfoComplete passe à true (email complet avec domaine)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showPaymentSection]);
+  }, [buyerInfoComplete, showPaymentSection]);
 
   async function handlePromoCode() {
     setPromoLoading(true); setPromoError(null);
@@ -313,8 +331,14 @@ export function CheckoutFlow({
                 <StripeForm clientSecret={clientSecret} orderId={orderId} total={total} />
               </Elements>
             ) : (
-              <div className="w-full py-3 bg-violet-200 rounded-xl flex items-center justify-center gap-2 text-violet-500 text-sm">
-                <Spinner /> Préparation du paiement…
+              <div className="space-y-2">
+                <div className="w-full py-3 bg-violet-200 rounded-xl flex items-center justify-center gap-2 text-violet-500 text-sm">
+                  <Spinner /> Préparation du paiement…
+                </div>
+                {/* DEBUG — retire en prod */}
+                <p className="text-xs text-gray-400 text-center">
+                  loadingPI={loadingPI ? "true" : "false"} | clientSecret={clientSecret ? "ok" : "null"} | orderId={orderId ?? "null"}
+                </p>
               </div>
             )}
           </div>
