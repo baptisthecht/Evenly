@@ -44,7 +44,7 @@ export default auth(async (req) => {
 			"/o/",
 			"/e/",
 		];
-		if (BYPASS_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
+			if (BYPASS_PREFIXES.some((p) => pathname === p || pathname.startsWith(p))) {
 			return NextResponse.next();
 		}
 
