@@ -21,7 +21,7 @@ export default async function ConfirmationPage({
 					locationAddress: true,
 					locationType: true,
 					confirmationMessage: true,
-					organization: { select: { name: true, slug: true } },
+					organization: { select: { name: true, slug: true, brand: { select: { primaryColor: true, logoUrl: true, brandName: true } } } },
 				},
 			},
 			tickets: {
@@ -80,6 +80,10 @@ export default async function ConfirmationPage({
 	}
 
 	const event = order.event;
+	const brand = event.organization.brand;
+	const primaryColor = brand?.primaryColor ?? "#7c3aed";
+	const brandName = brand?.brandName ?? "evoly";
+	const brandLogo = brand?.logoUrl;
 	const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.me";
 
 	// Generate QR for first ticket preview
@@ -98,7 +102,12 @@ export default async function ConfirmationPage({
 			{/* Header */}
 			<div className="bg-white border-b border-gray-200 px-4 py-4">
 				<div className="max-w-lg mx-auto flex items-center justify-between">
-					<span className="font-bold text-violet-600 text-lg">evoly</span>
+					{brandLogo ? (
+					// eslint-disable-next-line @next/next/no-img-element
+					<img src={brandLogo} alt={brandName} className="h-7 w-auto" />
+				) : (
+					<span className="font-bold text-lg" style={{ color: primaryColor }}>{brandName}</span>
+				)}
 					<span className="text-sm text-gray-500">
 						{event.organization.name}
 					</span>
@@ -215,7 +224,7 @@ export default async function ConfirmationPage({
 				<div className="space-y-2">
 					<a
 						href={ticketsUrl}
-						className="block w-full py-3 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 transition-colors text-center"
+						className="block w-full py-3 text-white text-sm font-semibold rounded-xl transition-colors text-center" style={{ backgroundColor: primaryColor }}
 					>
 						🎟️ Voir mes billets
 					</a>

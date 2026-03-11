@@ -3,7 +3,7 @@
 import { db } from "@evoly/db";
 import { stripe } from "@/lib/stripe";
 import { z } from "zod";
-import { resend } from "@/lib/resend";
+import { resend, FROM_EMAIL } from "@/lib/resend";
 import { OrderConfirmationEmail } from "@evoly/email";
 import { render } from "@react-email/components";
 import crypto from "crypto";
@@ -154,6 +154,52 @@ export async function createFreeOrderAction(data: unknown) {
 
 		return newOrder;
 	});
+
+	// Send confirmation email for free orders
+	try {
+		const fullOrder = await db.order.findUnique({
+			where: { id: order.id },
+			include: {
+				items: true,
+				event: {
+					select: {
+						title: true, startsAt: true, locationName: true,
+						confirmationMessage: true,
+						organization: { select: { brand: true } },
+					},
+				},
+			},
+		});
+		if (fullOrder) {
+			const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.me";
+			const ticketCount = fullOrder.items.reduce((a, i) => a + i.quantity, 0);
+			const brand = fullOrder.event.organization.brand as { primaryColor?: string; logoUrl?: string; brandName?: string; fromName?: string } | null;
+			const html = await render(OrderConfirmationEmail({
+				buyerName: `${fullOrder.buyerFirstName} ${fullOrder.buyerLastName}`,
+				eventTitle: fullOrder.event.title,
+				eventDate: new Date(fullOrder.event.startsAt).toLocaleDateString("fr-FR", {
+					weekday: "long", day: "numeric", month: "long", year: "numeric",
+					hour: "2-digit", minute: "2-digit",
+				}),
+				eventLocation: fullOrder.event.locationName ?? null,
+				ticketCount,
+				totalCents: 0,
+				magicToken: fullOrder.magicToken,
+				appUrl,
+				confirmationMessage: fullOrder.event.confirmationMessage ?? null,
+				brand: brand ?? null,
+			}));
+			const fromName = brand?.fromName;
+			await resend.emails.send({
+				from: fromName ? `${fromName} <noreply@evoly.me>` : FROM_EMAIL,
+				to: fullOrder.buyerEmail,
+				subject: `🎟️ Vos billets pour ${fullOrder.event.title}`,
+				html,
+			});
+		}
+	} catch (emailErr) {
+		console.error("[Free order confirmation email error]", emailErr);
+	}
 
 	return { success: true, orderId: order.id, magicToken: order.magicToken };
 }

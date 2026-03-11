@@ -22,6 +22,7 @@ async function getOrg(slug: string) {
 	return db.organization.findFirst({
 		where: { OR: [{ slug }, { previousSubdomain: slug }] },
 		include: {
+			brand: { select: { primaryColor: true, logoUrl: true, brandName: true } },
 			events: {
 				where: { status: "PUBLISHED", startsAt: { gte: new Date() } },
 				orderBy: { startsAt: "asc" },
@@ -43,6 +44,11 @@ export default async function OrgPublicPage({ params }: Props) {
 
 	if (!org) notFound();
 
+	const brand = org.brand;
+	const primaryColor = brand?.primaryColor ?? "#7c3aed";
+	const brandName = brand?.brandName ?? "evoly";
+	const brandLogo = brand?.logoUrl ?? org.logoUrl;
+
 	// Redirect if old subdomain
 	if (org.previousSubdomain === orgSlug && org.slug !== orgSlug) {
 		const { redirect } = await import("next/navigation");
@@ -54,11 +60,11 @@ export default async function OrgPublicPage({ params }: Props) {
 			{/* Navbar */}
 			<nav className="bg-white border-b border-gray-200 px-4 py-3">
 				<div className="max-w-4xl mx-auto flex items-center gap-3">
-					{org.logoUrl ? (
+					{brandLogo ? (
 						// eslint-disable-next-line @next/next/no-img-element
-						<img src={org.logoUrl} alt={org.name} className="h-8 w-auto" />
+						<img src={brandLogo} alt={brandName} className="h-8 w-auto" />
 					) : (
-						<span className="font-bold text-gray-900 text-lg">{org.name}</span>
+						<span className="font-bold text-lg" style={{ color: primaryColor }}>{brandName}</span>
 					)}
 				</div>
 			</nav>
@@ -91,7 +97,7 @@ export default async function OrgPublicPage({ params }: Props) {
 									href={`/e/${event.slug}`}
 									className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow group"
 								>
-									<div className="h-36 bg-gradient-to-br from-violet-500 to-violet-700 relative overflow-hidden">
+									<div className="h-36 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}cc, ${primaryColor})` }}>
 										{event.bannerUrl && (
 											// eslint-disable-next-line @next/next/no-img-element
 											<img
@@ -102,7 +108,7 @@ export default async function OrgPublicPage({ params }: Props) {
 										)}
 									</div>
 									<div className="p-4">
-										<p className="text-xs text-violet-600 font-medium mb-1">
+										<p className="text-xs font-medium mb-1" style={{ color: primaryColor }}>
 											{new Date(event.startsAt).toLocaleDateString("fr-FR", {
 												weekday: "short",
 												day: "numeric",
