@@ -18,6 +18,7 @@ interface TicketType {
 }
 interface EventData {
   id: string; title: string;
+  primaryColor?: string | null;
   organization: { stripeAccountStatus: string };
   ticketTypes: TicketType[];
 }
@@ -28,14 +29,16 @@ interface HolderData { [ticketTypeId: string]: Array<{ firstName: string; lastNa
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function CheckoutFlow({
-  event, quantities, onQuantityChange, onBack, onSuccess,
+  event, quantities, onQuantityChange, onBack, onSuccess, primaryColor: brandPrimary,
 }: {
   event: EventData;
   quantities: Record<string, number>;
   onQuantityChange: (q: Record<string, number>) => void;
   onBack: () => void;
   onSuccess: (orderId: string, magicToken: string) => void;
+  primaryColor?: string;
 }) {
+  const primaryColor = brandPrimary ?? event.primaryColor ?? "#7c3aed";
   const now = new Date();
   const availableTickets = event.ticketTypes.filter((tt) => {
     if (tt.saleStartsAt && new Date(tt.saleStartsAt) > now) return false;
@@ -322,13 +325,13 @@ export function CheckoutFlow({
             {/* Paiement */}
             {isFreeOrder ? (
               <button type="button" onClick={handleFreeSubmit} disabled={isPending}
-                className="w-full py-3 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
+                className="w-full py-3 disabled:opacity-40 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2" style={{ backgroundColor: primaryColor }}>
                 {isPending && <Spinner />}
                 Confirmer l&apos;inscription
               </button>
             ) : clientSecret && orderId ? (
               <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: "stripe", variables: { colorPrimary: "#7c3aed" } }, locale: "fr" }}>
-                <StripeForm clientSecret={clientSecret} orderId={orderId} total={total} />
+                <StripeForm clientSecret={clientSecret} orderId={orderId} total={total} primaryColor={primaryColor} />
               </Elements>
             ) : (
               <div className="space-y-2">
@@ -354,8 +357,8 @@ export function CheckoutFlow({
 
 // ─── Stripe form (inside <Elements>) ─────────────────────────────────────────
 
-function StripeForm({ clientSecret, orderId, total }: {
-  clientSecret: string; orderId: string; total: number;
+function StripeForm({ clientSecret, orderId, total, primaryColor }: {
+  clientSecret: string; orderId: string; total: number; primaryColor: string;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -426,7 +429,7 @@ function StripeForm({ clientSecret, orderId, total }: {
 
       <button type="button" onClick={handlePay}
         disabled={processing || !ready}
-        className="w-full py-3 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
+        className="w-full py-3 disabled:opacity-40 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2" style={{ backgroundColor: primaryColor }}>
         {processing && <Spinner />}
         {processing ? "Traitement…" : `Payer ${(total / 100).toFixed(2)}€`}
       </button>
@@ -457,4 +460,4 @@ function Spinner() {
   );
 }
 
-const inputCls = "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 transition-colors";
+const inputCls = "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-2 focus:ring-offset-1 transition-colors"; // ring color set inline
