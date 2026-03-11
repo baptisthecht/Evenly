@@ -92,6 +92,11 @@ export function ResalePurchasePage({ token, resaleLink, event }: Props) {
         setError(result.error ?? "Erreur inconnue");
         return;
       }
+      if ("free" in result && result.free) {
+        // Billet gratuit : achat immédiat, rediriger vers confirmation
+        window.location.href = `/resale/${token}/confirmation?free=1`;
+        return;
+      }
       if (result.clientSecret) {
         setClientSecret(result.clientSecret);
         setStep("payment");

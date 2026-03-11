@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect, useRef } from "react";
-import { loadStripe } from "@stripe/stripe-js";
+import { loadStripe, type Stripe, type StripeElements } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements, ExpressCheckoutElement } from "@stripe/react-stripe-js";
 import { validatePromoCodeAction, createFreeOrderAction, createPaymentIntentAction } from "@/actions/checkout";
 

@@ -1,4 +1,5 @@
 "use server";
+import crypto from "crypto";
 
 import { db } from "@evoly/db";
 import { stripe } from "@/lib/stripe";
@@ -135,6 +136,7 @@ export async function getResaleLinkAction(token: string) {
               },
             },
           },
+          order: { select: { items: { include: { _count: false } } } },
         },
       },
     },
@@ -213,6 +215,29 @@ export async function initResalePurchaseAction(input: z.infer<typeof buyResaleSc
   }
 
   const org = resaleLink.ticket.order.event.organization;
+
+  // Billet gratuit revendu à 0€ : pas besoin de Stripe
+  if (resaleLink.priceCents === 0) {
+    // Invalider l'ancien ticket, créer un nouveau
+    const oldTicket = resaleLink.ticket;
+    await db.$transaction(async (tx) => {
+      await tx.ticket.update({ where: { id: oldTicket.id }, data: { status: "CANCELLED" } });
+      await tx.ticket.create({
+        data: {
+          orderId: oldTicket.orderId,
+          orderItemId: oldTicket.orderItemId,
+          qrCode: crypto.randomUUID(),
+          holderFirstName: buyerFirstName,
+          holderLastName: buyerLastName,
+          holderEmail: buyerEmail,
+          status: "ACTIVE",
+        },
+      });
+      await tx.resaleLink.update({ where: { token }, data: { status: "SOLD" } });
+    });
+    return { success: true, free: true };
+  }
+
   if (!org.stripeAccountId || org.stripeAccountStatus !== "ACTIVE") {
     return { error: "Le vendeur ne peut pas recevoir de paiements pour le moment" };
   }

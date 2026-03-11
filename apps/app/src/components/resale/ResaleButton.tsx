@@ -92,7 +92,7 @@ export function ResaleButton({
                     />
                     <button
                       onClick={() => navigator.clipboard.writeText(`${typeof window !== "undefined" ? window.location.origin : ""}/resale/${existingResale.token}`)}
-                      className="text-xs text-violet-600 hover:underline whitespace-nowrap"
+                      className="text-xs text-gray-500 hover:underline whitespace-nowrap"
                     >
                       Copier
                     </button>
@@ -122,7 +122,7 @@ export function ResaleButton({
                     />
                     <button
                       onClick={() => navigator.clipboard.writeText(result.url!)}
-                      className="text-xs text-violet-600 hover:underline whitespace-nowrap"
+                      className="text-xs text-gray-500 hover:underline whitespace-nowrap"
                     >
                       Copier
                     </button>
@@ -154,7 +154,7 @@ export function ResaleButton({
                       step={0.5}
                       value={(priceCents / 100).toFixed(2)}
                       onChange={(e) => setPriceCents(Math.round(parseFloat(e.target.value || "0") * 100))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
                     />
                     <p className="text-xs text-gray-400 mt-1">
                       Prix original : {(originalPriceCents / 100).toFixed(2)}€ · Max : {(maxPrice / 100).toFixed(2)}€
@@ -179,7 +179,7 @@ export function ResaleButton({
                   <button
                     onClick={handleCreate}
                     disabled={isPending || (!isFree && (priceCents < 0 || priceCents > maxPrice))}
-                    className="flex-1 py-2.5 bg-violet-600 text-white font-semibold rounded-xl text-sm hover:bg-violet-700 transition-colors disabled:opacity-50"
+                    className="flex-1 py-2.5 bg-gray-900 text-white font-semibold rounded-xl text-sm hover:bg-gray-800 transition-colors disabled:opacity-50"
                   >
                     {isPending ? "Création…" : "Créer le lien"}
                   </button>

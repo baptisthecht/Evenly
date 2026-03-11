@@ -21,14 +21,14 @@ export default async function MagicTicketsPage({
 					locationName: true,
 					locationAddress: true,
 					locationType: true,
-					organization: { select: { name: true, logoUrl: true } },
+					organization: { select: { name: true, logoUrl: true, brand: { select: { brandName: true, logoUrl: true, primaryColor: true } } } },
 				},
 			},
 			tickets: {
 				where: { status: { in: ["ACTIVE", "USED"] } },
-				include: { seat: true, resaleLink: true },
+				include: { seat: true },
 			},
-			items: true,
+			items: { include: { _count: false } },
 		},
 	});
 
