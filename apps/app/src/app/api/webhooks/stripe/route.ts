@@ -147,17 +147,7 @@ export async function POST(req: NextRequest) {
 
           // Referral reward — fire on first paid sale
           const hasPaidItems = order.items.some((i) => i.unitPriceCents > 0);
-          if (hasPaidItems) {
-            const orgBefore = await tx.organization.findUnique({
-              where: { id: order.event.organizationId },
-              select: { ticketsSoldThisMonth: true },
-            });
-            // First paid sale = ticketsSoldThisMonth was 0 before this increment
-            if ((orgBefore?.ticketsSoldThisMonth ?? 0) === 0) {
-              const { triggerReferralRewardAction } = await import("@/actions/referral");
-              triggerReferralRewardAction(order.event.organizationId).catch(console.error);
-            }
-          }
+
 
           // Quota alerts
           const updatedOrg = await tx.organization.findUnique({
@@ -304,6 +294,13 @@ export async function POST(req: NextRequest) {
               : null,
           },
         });
+
+        // Parrainage : récompenser parrain + filleul si achat annuel
+        const isYearly = session.metadata?.billing === "yearly";
+        if (isYearly) {
+          const { triggerReferralRewardAction } = await import("@/actions/referral");
+          triggerReferralRewardAction(organizationId).catch(console.error);
+        }
         break;
       }
 

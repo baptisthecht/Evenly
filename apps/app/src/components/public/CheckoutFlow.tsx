@@ -84,7 +84,7 @@ export function CheckoutFlow({
   const isFreeOrder = discountedSubtotal === 0;
   const commissionRate = 0.05;
   const estimatedFees = isFreeOrder ? 0 : Math.round(discountedSubtotal * commissionRate);
-  const total = discountedSubtotal + estimatedFees;
+  const total = discountedSubtotal; // Commission prélevée côté organisateur via Stripe, pas ajoutée au total acheteur
 
   const hasNominative = cartItems.some((i) => i.ticketType.isNominative);
   // Affiche la section dès qu'il y a un @
@@ -310,10 +310,13 @@ export function CheckoutFlow({
               {!isFreeOrder && (
                 <div className="flex justify-between text-gray-400 text-xs">
                   <span className="flex items-center gap-1">
-                    Commission Evoly
-                    <span title="Affiché clairement, toujours. Aucun frais caché." className="cursor-help text-gray-300">ⓘ</span>
+                    Frais de service inclus
+                    <span
+                      title={`Frais de service Evoly : ~${(estimatedFees / 100).toFixed(2)}€ (${Math.round(commissionRate * 100)}% prélevés sur le montant reversé à l'organisateur). Aucun frais supplémentaire pour vous.`}
+                      className="cursor-help text-gray-300 hover:text-gray-400"
+                    >ⓘ</span>
                   </span>
-                  <span>~{(estimatedFees / 100).toFixed(2)}€</span>
+                  <span className="text-gray-300">inclus</span>
                 </div>
               )}
               <div className="flex justify-between font-semibold text-gray-900 pt-1 border-t border-gray-200">

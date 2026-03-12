@@ -59,7 +59,7 @@ export async function createProCheckoutAction(
     },
     success_url: `${appUrl}/dashboard/${org.slug}/billing?success=true`,
     cancel_url: `${appUrl}/dashboard/${org.slug}/billing`,
-    metadata: { organizationId },
+    metadata: { organizationId, billing: interval === "year" ? "yearly" : "monthly" },
   });
 
   return { success: true, url: checkoutSession.url };

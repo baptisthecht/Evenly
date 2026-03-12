@@ -24,7 +24,7 @@ async function getOrg(slug: string) {
 		include: {
 			brand: { select: { primaryColor: true, logoUrl: true, brandName: true } },
 			events: {
-				where: { status: "PUBLISHED", startsAt: { gte: new Date() } },
+				where: { status: "PUBLISHED", OR: [{ startsAt: { gte: new Date() } }, { endsAt: { gte: new Date() } }] },
 				orderBy: { startsAt: "asc" },
 				take: 12,
 				include: {

@@ -100,7 +100,7 @@ export function EventPublicPage({ event, otherEvents }: Props) {
       {/* Navbar */}
       <nav className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-40">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2">
+          <a href={`/o/${event.organization.slug}`} className="flex items-center gap-2">
             {brandLogo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={brandLogo} alt={event.organization.name} className="h-7 w-auto" />
@@ -155,7 +155,7 @@ export function EventPublicPage({ event, otherEvents }: Props) {
               <InfoRow icon="🎟️" label="Remboursement">
                 {event.refundPolicy === "NON_REFUNDABLE" && "Non remboursable"}
                 {event.refundPolicy === "ALWAYS_REFUNDABLE" && "Remboursable à tout moment"}
-                {event.refundPolicy === "ORGANIZER_DEFINED" && `Remboursable jusqu'à ${event.refundDeadlineDays} jours avant`}
+                {event.refundPolicy === "ORGANIZER_DEFINED" && event.refundDeadlineDays != null && `Remboursable jusqu'à ${event.refundDeadlineDays} jours avant`}
               </InfoRow>
             </div>
 

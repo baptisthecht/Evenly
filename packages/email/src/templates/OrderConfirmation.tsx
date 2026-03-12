@@ -122,7 +122,7 @@ export function OrderConfirmationEmail({
 
 					{/* CTA */}
 					<Section style={{ textAlign: "center", margin: "28px 0" }}>
-						<Button href={ticketsUrl} style={button}>
+						<Button href={ticketsUrl} style={{ ...button, backgroundColor: primaryColor }}>
 							Voir mes billets →
 						</Button>
 						<Text style={{ fontSize: 12, color: "#9ca3af", marginTop: 12 }}>

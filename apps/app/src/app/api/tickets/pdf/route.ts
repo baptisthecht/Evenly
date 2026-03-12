@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     include: {
       event: {
         include: {
-          organization: { select: { name: true, logoUrl: true, planId: true } },
+          organization: { select: { name: true, logoUrl: true, planId: true, brand: { select: { primaryColor: true, logoUrl: true, brandName: true } } } },
         },
       },
       tickets: {
@@ -57,8 +57,10 @@ export async function GET(req: NextRequest) {
   });
 
   const isPro = event.organization.planId === "pro";
-  const brandName = isPro ? event.organization.name : "Evoly";
-  const brandColor = (event as any).primaryColor ?? "#7c3aed";
+  const orgBrand = event.organization.brand as { primaryColor?: string | null; logoUrl?: string | null; brandName?: string | null } | null;
+  const brandName = orgBrand?.brandName ?? (isPro ? event.organization.name : "Evoly");
+  const brandColor = orgBrand?.primaryColor ?? "#7c3aed";
+  const brandLogo = orgBrand?.logoUrl ?? event.organization.logoUrl;
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -86,6 +88,7 @@ export async function GET(req: NextRequest) {
       align-items: center;
     }
     .ticket-header .brand { color: white; font-size: 18px; font-weight: 700; }
+    .ticket-header .brand-logo { height: 28px; width: auto; }
     .ticket-header .type { color: rgba(255,255,255,0.8); font-size: 12px; }
     .ticket-body { padding: 24px; display: flex; gap: 20px; }
     .ticket-info { flex: 1; }

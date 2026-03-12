@@ -102,48 +102,74 @@ export async function applyReferralCodeAction(code: string, newOrgId: string) {
 // ── Déclencher la récompense après 1ère vente payante du filleul ─────────────
 // Appelé depuis le webhook payment_intent.succeeded
 
+// Appelé lors d'un achat d'abonnement annuel Pro
+// Offre 1 mois Pro au parrain ET au filleul
 export async function triggerReferralRewardAction(referredOrgId: string) {
   const referral = await db.referral.findFirst({
-    where: {
-      referredOrgId,
-      status: "REGISTERED",
-    },
+    where: { referredOrgId, status: "REGISTERED" },
     include: {
-      referrerOrg: { select: { id: true, slug: true, stripeCustomerId: true, planId: true } },
+      referrerOrg: { select: { id: true, slug: true, planId: true, trialEndsAt: true } },
     },
   });
 
   if (!referral) return;
 
-  // Mark as rewarded
+  const oneMonthFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+  // Mark referral as rewarded
   await db.referral.update({
     where: { id: referral.id },
     data: { status: "REWARDED", rewardGrantedAt: new Date() },
   });
 
-  // Grant 1 month Pro to referrer org (if not already Pro)
+  // 1. Offrir 1 mois Pro au PARRAIN
   const referrerOrg = referral.referrerOrg;
-
-  // Set trialEndsAt to now + 30 days
-  const trialEndsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const referrerTrialEnds = referrerOrg.trialEndsAt;
+  // Si déjà en trial, prolonger; sinon démarrer un trial
+  const referrerNewTrial = referrerTrialEnds && referrerTrialEnds > new Date()
+    ? new Date(referrerTrialEnds.getTime() + 30 * 24 * 60 * 60 * 1000)
+    : oneMonthFromNow;
 
   await db.organization.update({
     where: { id: referrerOrg.id },
     data: {
       planId: "pro",
       subscriptionStatus: "TRIALING",
-      trialEndsAt,
+      trialEndsAt: referrerNewTrial,
     },
   });
 
-  // Notify referrer org admins
   await db.notification.create({
     data: {
       organizationId: referrerOrg.id,
-      type: "PAYMENT_FAILED", // reuse closest type — ideally add REFERRAL_REWARD
-      title: "🎁 Récompense parrainage !",
-      message: "Votre filleul a réalisé sa première vente. 1 mois Pro vous a été offert !",
+      type: "PAYMENT_FAILED",
+      title: "🎁 1 mois Pro offert !",
+      message: "Votre filleul vient de souscrire à un abonnement annuel. 1 mois Pro vous a été offert en remerciement.",
       link: `/dashboard/${referrerOrg.slug}/billing`,
     },
   });
+
+  // 2. Offrir 1 mois Pro au FILLEUL (en plus de son abonnement)
+  const referredOrg = await db.organization.findUnique({
+    where: { id: referredOrgId },
+    select: { id: true, slug: true, subscriptionEndsAt: true },
+  });
+  if (referredOrg?.subscriptionEndsAt) {
+    // Prolonger l'abonnement d'un mois
+    await db.organization.update({
+      where: { id: referredOrgId },
+      data: {
+        subscriptionEndsAt: new Date(referredOrg.subscriptionEndsAt.getTime() + 30 * 24 * 60 * 60 * 1000),
+      },
+    });
+    await db.notification.create({
+      data: {
+        organizationId: referredOrgId,
+        type: "PAYMENT_FAILED",
+        title: "🎁 1 mois offert !",
+        message: "Votre abonnement annuel a été prolongé d'1 mois grâce à votre code de parrainage.",
+        link: `/dashboard/${referredOrg.slug}/billing`,
+      },
+    });
+  }
 }

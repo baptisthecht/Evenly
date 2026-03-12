@@ -290,6 +290,15 @@ export function TicketsManager({ event, ticketTypes: initial, organizationId, or
                   <p className="text-xs text-amber-600 mt-1">Prix figé (ventes existantes).</p>
                 )}
                 {priceCents === 0 && <p className="text-xs text-green-600 mt-1">✓ Ticket gratuit — 0% de commission.</p>}
+                {priceCents > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Vous recevez{" "}
+                    <span className="font-semibold text-gray-700">
+                      {((priceCents * 0.95) / 100).toFixed(2)}€
+                    </span>{" "}
+                    après frais de service (5%)
+                  </p>
+                )}
               </DrawerField>
 
               <DrawerField label="Description">
