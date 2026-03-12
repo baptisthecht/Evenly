@@ -21,22 +21,38 @@ export default async function MagicTicketsPage({
 					locationName: true,
 					locationAddress: true,
 					locationType: true,
-					organization: { select: { name: true, logoUrl: true, brand: { select: { brandName: true, logoUrl: true, primaryColor: true } } } },
+					organization: {
+						select: {
+							name: true,
+							logoUrl: true,
+							brand: {
+								select: { brandName: true, logoUrl: true, primaryColor: true },
+							},
+						},
+					},
 				},
 			},
 			tickets: {
 				where: { status: { in: ["ACTIVE", "USED"] } },
-				include: { seat: true },
+				include: {
+					seat: true,
+					resaleLink: {
+						select: { token: true, priceCents: true, status: true, expiresAt: true },
+					},
+				},
 			},
-			items: { include: { _count: false } },
+			items: true,
 		},
 	});
 
 	if (!order) notFound();
 
 	const event = order.event;
+	const brand = event.organization.brand;
+	const primaryColor = brand?.primaryColor ?? "#7c3aed";
+	const brandName = brand?.brandName ?? "evoly";
+	const brandLogo = brand?.logoUrl ?? event.organization.logoUrl;
 
-	// Generate real QR codes server-side
 	const ticketsWithQr = await Promise.all(
 		order.tickets.map(async (ticket) => ({
 			...ticket,
@@ -48,19 +64,24 @@ export default async function MagicTicketsPage({
 
 	return (
 		<div className="min-h-screen bg-gray-50">
-			{/* Navbar */}
 			<nav className="bg-white border-b border-gray-200 px-4 py-3">
 				<div className="max-w-xl mx-auto flex items-center justify-between">
-					<span className="font-bold text-violet-600 text-lg">evoly</span>
-					<div className="flex items-center gap-3">
-						<span className="text-sm text-gray-500">
-							{event.organization.name}
+					{brandLogo ? (
+						// eslint-disable-next-line @next/next/no-img-element
+						<img src={brandLogo} alt={brandName} className="h-7 w-auto" />
+					) : (
+						<span className="font-bold text-lg" style={{ color: primaryColor }}>
+							{brandName}
 						</span>
+					)}
+					<div className="flex items-center gap-3">
+						<span className="text-sm text-gray-500">{event.organization.name}</span>
 						<a
 							href={`${pdfUrl}&print=1`}
 							target="_blank"
 							rel="noopener noreferrer"
-							className="text-xs px-3 py-1.5 bg-violet-600 text-white rounded-full hover:bg-violet-700 transition-colors"
+							className="text-xs px-3 py-1.5 text-white rounded-full hover:opacity-90 transition-opacity"
+							style={{ backgroundColor: primaryColor }}
 						>
 							📄 Imprimer / PDF
 						</a>
@@ -69,7 +90,6 @@ export default async function MagicTicketsPage({
 			</nav>
 
 			<div className="max-w-xl mx-auto px-4 py-8 space-y-6">
-				{/* Event info */}
 				<div className="bg-white rounded-2xl border border-gray-200 p-5">
 					<h1 className="text-lg font-bold text-gray-900">{event.title}</h1>
 					<div className="mt-3 space-y-1.5 text-sm text-gray-500">
@@ -93,7 +113,6 @@ export default async function MagicTicketsPage({
 					</div>
 				</div>
 
-				{/* Order summary */}
 				<div className="bg-white rounded-2xl border border-gray-200 p-5">
 					<div className="flex items-center justify-between mb-3">
 						<h2 className="text-sm font-semibold text-gray-900">
@@ -107,14 +126,11 @@ export default async function MagicTicketsPage({
 						{order.buyerFirstName} {order.buyerLastName} · {order.buyerEmail}
 					</p>
 					<p className="text-sm font-semibold text-gray-900 mt-1">
-						Total :{" "}
-						{order.totalCents === 0
-							? "Gratuit"
-							: `${(order.totalCents / 100).toFixed(2)}€`}
+						Total:{" "}
+						{order.totalCents === 0 ? "Gratuit" : `${(order.totalCents / 100).toFixed(2)}€`}
 					</p>
 				</div>
 
-				{/* Tickets */}
 				<div className="space-y-3">
 					<div className="flex items-center justify-between px-1">
 						<h2 className="text-sm font-semibold text-gray-900">
@@ -124,7 +140,8 @@ export default async function MagicTicketsPage({
 							href={pdfUrl}
 							target="_blank"
 							rel="noopener noreferrer"
-							className="text-xs text-violet-600 hover:underline"
+							className="text-xs hover:underline"
+							style={{ color: primaryColor }}
 						>
 							Télécharger tous les PDF →
 						</a>
@@ -135,8 +152,10 @@ export default async function MagicTicketsPage({
 							key={ticket.id}
 							className="bg-white rounded-2xl border border-gray-200 overflow-hidden"
 						>
-							{/* Ticket header */}
-							<div className="bg-violet-600 px-5 py-3 flex items-center justify-between">
+							<div
+								className="px-5 py-3 flex items-center justify-between"
+								style={{ backgroundColor: primaryColor }}
+							>
 								<span className="text-xs font-semibold text-white/80 uppercase tracking-wide">
 									Billet {i + 1}
 									{ticketsWithQr.length > 1 ? ` / ${ticketsWithQr.length}` : ""}
@@ -159,13 +178,17 @@ export default async function MagicTicketsPage({
 										{ticket.holderLastName ?? order.buyerLastName}
 									</p>
 									{ticket.holderEmail && (
-										<p className="text-xs text-gray-400 mt-0.5">
-											{ticket.holderEmail}
-										</p>
+										<p className="text-xs text-gray-400 mt-0.5">{ticket.holderEmail}</p>
 									)}
 									{ticket.seat && (
 										<div className="mt-2">
-											<span className="text-xs font-semibold text-violet-600 bg-violet-50 px-2 py-1 rounded-lg">
+											<span
+												className="text-xs font-semibold px-2 py-1 rounded-lg"
+												style={{
+													color: primaryColor,
+													backgroundColor: `${primaryColor}18`,
+												}}
+											>
 												📍 Place {ticket.seat.label}
 											</span>
 										</div>
@@ -175,7 +198,7 @@ export default async function MagicTicketsPage({
 											href={`${pdfUrl}&ticketId=${ticket.id}&print=1`}
 											target="_blank"
 											rel="noopener noreferrer"
-											className="text-xs text-gray-400 hover:text-violet-600 transition-colors"
+											className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
 										>
 											📄 PDF individuel
 										</a>
@@ -183,15 +206,27 @@ export default async function MagicTicketsPage({
 											<ResaleButton
 												ticketId={ticket.id}
 												magicToken={magicToken}
-												originalPriceCents={order.items.find(item => item.id === ticket.orderItemId)?.unitPriceCents ?? 0}
+												originalPriceCents={
+													order.items.find(
+														(item) => item.id === ticket.orderItemId,
+													)?.unitPriceCents ?? 0
+												}
 												eventStartsAt={event.startsAt.toISOString()}
-												existingResale={ticket.resaleLink ? { token: ticket.resaleLink.token, priceCents: ticket.resaleLink.priceCents, status: ticket.resaleLink.status, expiresAt: ticket.resaleLink.expiresAt.toISOString() } : null}
+												existingResale={
+													ticket.resaleLink
+														? {
+																token: ticket.resaleLink.token,
+																priceCents: ticket.resaleLink.priceCents,
+																status: ticket.resaleLink.status,
+																expiresAt: ticket.resaleLink.expiresAt.toISOString(),
+															}
+														: null
+												}
 											/>
 										)}
 									</div>
 								</div>
 
-								{/* Real QR Code */}
 								<div className="flex-shrink-0">
 									{/* eslint-disable-next-line @next/next/no-img-element */}
 									<img
@@ -219,7 +254,7 @@ export default async function MagicTicketsPage({
 					</p>
 					<a
 						href={`/refund/${magicToken}`}
-						className="text-xs text-gray-400 hover:text-violet-600 transition-colors underline"
+						className="text-xs text-gray-400 hover:underline transition-colors"
 					>
 						Demander un remboursement
 					</a>
