@@ -28,8 +28,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Prisma
-packages/db/prisma/migrations
 
 # TypeScript
 *.tsbuildinfo

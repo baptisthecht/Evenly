@@ -77,12 +77,43 @@ evoly/
 ## Commandes utiles
 
 ```bash
-pnpm dev              # Lance tous les apps
-pnpm build            # Build tous les packages
-pnpm db:migrate       # Migrations Prisma
-pnpm db:studio        # Prisma Studio
-pnpm db:generate      # Régénère le client Prisma
+pnpm dev                  # Lance tous les apps
+pnpm build                # Build tous les packages
+pnpm db:migrate           # Migrations Prisma (dev — crée et applique les migrations)
+pnpm db:migrate:deploy    # Applique les migrations en production (sans prompt interactif)
+pnpm db:studio            # Prisma Studio
+pnpm db:generate          # Régénère le client Prisma
 ```
+
+## Déploiement — Runbook DB
+
+### Ajouter une migration
+
+1. Modifier `packages/db/prisma/schema.prisma`
+2. Générer et appliquer en dev :
+   ```bash
+   pnpm db:migrate
+   # Prisma demande un nom → ex: add_event_capacity
+   ```
+3. Vérifier le fichier SQL généré dans `packages/db/prisma/migrations/`
+4. Committer les fichiers de migration avec le code
+
+### Déployer en production
+
+```bash
+# Exécuter AVANT de démarrer l'application
+pnpm db:migrate:deploy
+```
+
+- Applique toutes les migrations en attente de façon non-interactive.
+- **Ne jamais utiliser `prisma db push` en production** — cette commande peut supprimer des données silencieusement.
+- En cas d'échec, vérifier `prisma migrate status` pour identifier la migration bloquante.
+
+### Rollback
+
+Prisma Migrate ne génère pas de rollback automatique. En cas de problème :
+1. Corriger le schéma et créer une nouvelle migration de correction.
+2. Ou restaurer la base depuis la dernière sauvegarde (voir runbook backup).
 
 ## Variables d'environnement
 

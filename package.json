@@ -8,7 +8,7 @@
     "dev": "turbo dev",
     "db:generate": "pnpm --filter @evoly/db generate",
     "db:migrate": "pnpm --filter @evoly/db migrate:dev",
-    "db:push": "pnpm --filter @evoly/db db:push",
+    "db:migrate:deploy": "pnpm --filter @evoly/db migrate:deploy",
     "db:studio": "pnpm --filter @evoly/db studio",
     "start:app": "pnpm --filter @evoly/app start",
     "start:web": "pnpm --filter @evoly/web start",
