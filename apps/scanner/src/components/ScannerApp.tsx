@@ -26,15 +26,33 @@ export function ScannerApp({ token, label, event }: Props) {
   const [stats, setStats] = useState<EventStats | null>(null);
   const [scanning, setScanning] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const resultTimeout = useRef<NodeJS.Timeout | null>(null);
 
+  // Network status
+  useEffect(() => {
+    const onOnline = () => setIsOffline(false);
+    const onOffline = () => setIsOffline(true);
+    setIsOffline(!navigator.onLine);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
+
   // Load stats
   const loadStats = useCallback(async () => {
-    const res = await fetch(`/api/event?token=${token}`);
-    if (res.ok) setStats(await res.json());
+    try {
+      const res = await fetch(`/api/event?token=${token}`);
+      if (res.ok) setStats(await res.json());
+    } catch {
+      // Silent fail — network status indicator covers this
+    }
   }, [token]);
 
   useEffect(() => {
@@ -114,15 +132,21 @@ export function ScannerApp({ token, label, event }: Props) {
   }
 
   async function scan(qrCode: string) {
-    const res = await fetch("/api/scan", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ qrCode: qrCode.trim(), token }),
-    });
-    const data: ScanResult = await res.json();
-    showResult(data);
-    triggerHaptic(data.result);
-    loadStats();
+    try {
+      const res = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ qrCode: qrCode.trim(), token }),
+      });
+      const data: ScanResult = await res.json();
+      showResult(data);
+      triggerHaptic(data.result);
+      loadStats();
+    } catch {
+      setIsOffline(true);
+      showResult({ result: "INVALID", message: "Hors ligne — scan impossible." });
+      triggerHaptic("INVALID");
+    }
   }
 
   function showResult(result: ScanResult) {
@@ -155,6 +179,13 @@ export function ScannerApp({ token, label, event }: Props) {
 
   return (
     <div className="h-screen w-screen flex flex-col bg-black overflow-hidden select-none">
+      {/* Offline banner */}
+      {isOffline && (
+        <div className="flex-shrink-0 bg-amber-500 text-black text-xs font-semibold text-center py-1 px-4 z-30">
+          Hors ligne — les scans ne seront pas enregistrés
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex-shrink-0 px-4 pt-safe-top pt-4 pb-2 flex items-center justify-between bg-black/80 backdrop-blur-sm z-20">
         <div className="min-w-0">
