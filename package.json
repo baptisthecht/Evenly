@@ -15,7 +15,9 @@
     "start:scanner": "pnpm --filter @evoly/scanner start",
     "build:app": "pnpm --filter @evoly/app build",
     "build:web": "pnpm --filter @evoly/web build",
-    "build:scanner": "pnpm --filter @evoly/scanner build"
+    "build:scanner": "pnpm --filter @evoly/scanner build",
+    "test": "turbo test",
+    "test:coverage": "pnpm --filter @evoly/core test:coverage"
   },
   "devDependencies": {
     "prettier": "^3.3.3",
