@@ -30,8 +30,8 @@ cd Evoly
 pnpm install
 
 # Copier et remplir les variables d'environnement
-cp apps/app/.env.example apps/app/.env
-# Éditer apps/app/.env avec vos valeurs
+cp .env.example .env
+# Éditer .env avec vos valeurs
 ```
 
 ### 3. Base de données
@@ -86,15 +86,17 @@ pnpm db:generate      # Régénère le client Prisma
 
 ## Variables d'environnement
 
-Voir `apps/app/.env.example` pour la liste complète.
+Voir [`.env.example`](.env.example) pour la liste complète avec descriptions et valeurs d'exemple.
 
 Variables requises :
 - `DATABASE_URL` — Connection string PostgreSQL
+- `AUTH_SECRET` — Secret aléatoire (générer avec `openssl rand -base64 32`)
 - `NEXTAUTH_URL` — URL de l'app (http://localhost:3001 en dev)
-- `NEXTAUTH_SECRET` — Secret aléatoire (générer avec `openssl rand -base64 32`)
 - `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` — OAuth Google
-- `STRIPE_SECRET_KEY` — Stripe secret key
+- `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` — Stripe
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` — Stripe (client)
 - `RESEND_API_KEY` — Resend API key
+- `CRON_SECRET` — Secret pour les endpoints cron
 
 ## Phases de développement
 
