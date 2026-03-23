@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@evoly/db";
 import { resend, FROM_EMAIL } from "@/lib/resend";
+import { captureException } from "@/lib/sentry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +13,7 @@ export async function GET(req: NextRequest) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
+	try {
 	const now = new Date();
 	const sent: string[] = [];
 
@@ -264,6 +266,11 @@ export async function GET(req: NextRequest) {
 
 	console.log(`[cron/email-automations] Sent: ${sent.length} batches`);
 	return NextResponse.json({ sent });
+	} catch (err) {
+		console.error("[cron/email-automations] Error:", err);
+		captureException(err, { cron: "email-automations" });
+		return NextResponse.json({ error: "Internal error" }, { status: 500 });
+	}
 }
 
 // ── Email HTML builders ──────────────────────────────────────────

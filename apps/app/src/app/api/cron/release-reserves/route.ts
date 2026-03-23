@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@evoly/db";
+import { captureException } from "@/lib/sentry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +13,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  try {
   const now = new Date();
 
   // Find all reserves due for release
@@ -54,4 +56,9 @@ export async function GET(req: NextRequest) {
   console.log(`[cron/release-reserves] Released ${released} reserves, total ${totalCents / 100}€`);
 
   return NextResponse.json({ released, totalCents });
+  } catch (err) {
+    console.error("[cron/release-reserves] Error:", err);
+    captureException(err, { cron: "release-reserves" });
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  }
 }

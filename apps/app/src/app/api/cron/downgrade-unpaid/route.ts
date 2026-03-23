@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@evoly/db";
 import { resend, FROM_EMAIL } from "@/lib/resend";
+import { captureException } from "@/lib/sentry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +13,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  try {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
   // Find orgs that are past_due and subscription ends more than 7 days ago
@@ -66,4 +68,9 @@ export async function GET(req: NextRequest) {
   console.log(`[cron/downgrade-unpaid] Downgraded ${downgraded} organizations`);
 
   return NextResponse.json({ downgraded });
+  } catch (err) {
+    console.error("[cron/downgrade-unpaid] Error:", err);
+    captureException(err, { cron: "downgrade-unpaid" });
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  }
 }

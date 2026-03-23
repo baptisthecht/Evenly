@@ -6,6 +6,7 @@ import { resend, FROM_EMAIL } from "@/lib/resend";
 import { OrderConfirmationEmail } from "@evoly/email";
 import { render } from "@react-email/components";
 import crypto from "crypto";
+import { captureException } from "@/lib/sentry";
 
 export const runtime = "nodejs";
 
@@ -450,6 +451,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   } catch (err: any) {
     console.error("[Stripe Webhook Error]", err);
+    captureException(err, { eventType: event?.type, handler: "stripe-webhook" });
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
