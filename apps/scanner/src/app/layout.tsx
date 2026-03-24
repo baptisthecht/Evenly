@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 
 export const metadata: Metadata = {
   title: "Evoly Scanner",
@@ -23,7 +24,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr">
-      <body className="bg-black text-white antialiased overscroll-none">{children}</body>
+      <body className="bg-black text-white antialiased overscroll-none">
+        <ServiceWorkerRegistration />
+        {children}
+      </body>
     </html>
   );
 }

@@ -1,12 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-
-interface ScanResult {
-  result: "VALID" | "ALREADY_SCANNED" | "INVALID" | "WRONG_EVENT" | "INVALID_SCANNER";
-  message: string;
-  ticket?: { holderName: string; holderEmail?: string | null; checkedInAt?: string };
-}
+import { useOfflineQueue, ScanResult } from "@/hooks/useOfflineQueue";
 
 interface EventStats {
   stats: { total: number; checkedIn: number; rate: number };
@@ -31,19 +26,38 @@ export function ScannerApp({ token, label, event }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const resultTimeout = useRef<NodeJS.Timeout | null>(null);
+  const wasOfflineRef = useRef(false);
 
-  // Network status
+  const { pendingCount, addToQueue, flushQueue, refreshQueue } = useOfflineQueue();
+
+  // Network status + auto-flush on reconnect
   useEffect(() => {
-    const onOnline = () => setIsOffline(false);
-    const onOffline = () => setIsOffline(true);
+    const onOnline = () => {
+      setIsOffline(false);
+      if (wasOfflineRef.current) {
+        flushQueue((result) => showResult(result));
+      }
+      wasOfflineRef.current = false;
+    };
+    const onOffline = () => {
+      setIsOffline(true);
+      wasOfflineRef.current = true;
+    };
     setIsOffline(!navigator.onLine);
+    wasOfflineRef.current = !navigator.onLine;
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
     return () => {
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
     };
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flushQueue]);
+
+  // Refresh queue count on mount
+  useEffect(() => {
+    refreshQueue();
+  }, [refreshQueue]);
 
   // Load stats
   const loadStats = useCallback(async () => {
@@ -69,6 +83,7 @@ export function ScannerApp({ token, label, event }: Props) {
     }
     startCamera();
     return () => stopCamera();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
   async function startCamera() {
@@ -103,14 +118,13 @@ export function ScannerApp({ token, label, event }: Props) {
         try {
           const { readBarcodes } = await import("zxing-wasm/reader");
 
-          // Capturer une frame de la vidéo
           const canvas = document.createElement("canvas");
           canvas.width = videoRef.current.videoWidth;
           canvas.height = videoRef.current.videoHeight;
           const ctx = canvas.getContext("2d")!;
           ctx.drawImage(videoRef.current, 0, 0);
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          
+
           const results = await readBarcodes(imageData, {
             formats: ["QRCode"],
           });
@@ -144,7 +158,12 @@ export function ScannerApp({ token, label, event }: Props) {
       loadStats();
     } catch {
       setIsOffline(true);
-      showResult({ result: "INVALID", message: "Hors ligne — scan impossible." });
+      wasOfflineRef.current = true;
+      await addToQueue(qrCode.trim(), token);
+      showResult({
+        result: "QUEUED",
+        message: "Scan mis en file d'attente",
+      });
       triggerHaptic("INVALID");
     }
   }
@@ -152,7 +171,7 @@ export function ScannerApp({ token, label, event }: Props) {
   function showResult(result: ScanResult) {
     if (resultTimeout.current) clearTimeout(resultTimeout.current);
     setLastResult(result);
-    resultTimeout.current = setTimeout(() => setLastResult(null), 2500);
+    resultTimeout.current = setTimeout(() => setLastResult(null), 3000);
   }
 
   function triggerHaptic(result: string) {
@@ -169,12 +188,19 @@ export function ScannerApp({ token, label, event }: Props) {
     setMode("scan");
   }
 
+  async function handleRetryFlush() {
+    setLastResult(null);
+    await flushQueue((result) => showResult(result));
+    loadStats();
+  }
+
   const resultColors: Record<string, string> = {
     VALID: "bg-green-500",
     ALREADY_SCANNED: "bg-amber-500",
     INVALID: "bg-red-500",
     WRONG_EVENT: "bg-red-500",
     INVALID_SCANNER: "bg-red-900",
+    QUEUED: "bg-gray-800",
   };
 
   return (
@@ -192,16 +218,29 @@ export function ScannerApp({ token, label, event }: Props) {
           <p className="text-xs text-gray-400 truncate">{label}</p>
           <p className="text-sm font-semibold text-white truncate">{event.title}</p>
         </div>
-        {stats && (
-          <button
-            type="button"
-            onClick={() => setMode(mode === "stats" ? "scan" : "stats")}
-            className="flex-shrink-0 flex flex-col items-center bg-white/10 rounded-xl px-3 py-1.5 ml-3"
-          >
-            <span className="text-lg font-bold text-white leading-none">{stats.stats.checkedIn}</span>
-            <span className="text-xs text-gray-400">/ {stats.stats.total}</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+          {/* Offline queue badge */}
+          {pendingCount > 0 && (
+            <button
+              type="button"
+              onClick={handleRetryFlush}
+              className="flex items-center gap-1 bg-amber-500/20 border border-amber-500/40 text-amber-400 rounded-xl px-2.5 py-1.5 text-xs font-semibold"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              {pendingCount} en attente
+            </button>
+          )}
+          {stats && (
+            <button
+              type="button"
+              onClick={() => setMode(mode === "stats" ? "scan" : "stats")}
+              className="flex flex-col items-center bg-white/10 rounded-xl px-3 py-1.5"
+            >
+              <span className="text-lg font-bold text-white leading-none">{stats.stats.checkedIn}</span>
+              <span className="text-xs text-gray-400">/ {stats.stats.total}</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Main area */}
@@ -328,7 +367,8 @@ export function ScannerApp({ token, label, event }: Props) {
             <div className="text-center space-y-3">
               <div className="text-6xl">
                 {lastResult.result === "VALID" ? "✅" :
-                  lastResult.result === "ALREADY_SCANNED" ? "⚠️" : "❌"}
+                  lastResult.result === "ALREADY_SCANNED" ? "⚠️" :
+                  lastResult.result === "QUEUED" ? "🕐" : "❌"}
               </div>
               <p className="text-2xl font-bold text-white">{lastResult.message}</p>
               {lastResult.ticket?.holderName && (
@@ -338,6 +378,15 @@ export function ScannerApp({ token, label, event }: Props) {
                 <p className="text-white/60 text-sm">
                   Scanné à {new Date(lastResult.ticket.checkedInAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
                 </p>
+              )}
+              {lastResult.result === "QUEUED" && (
+                <button
+                  type="button"
+                  onClick={handleRetryFlush}
+                  className="mt-2 px-5 py-2.5 bg-white/20 hover:bg-white/30 text-white text-sm font-semibold rounded-xl border border-white/30"
+                >
+                  Réessayer maintenant
+                </button>
               )}
             </div>
           </div>
