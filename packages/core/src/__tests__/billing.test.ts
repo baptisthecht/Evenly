@@ -24,7 +24,7 @@ vi.mock("@evoly/db", () => ({
 
 import { db } from "@evoly/db";
 
-const mockDb = db as {
+const mockDb = db as unknown as {
   organization: {
     findUniqueOrThrow: ReturnType<typeof vi.fn>;
     findUnique: ReturnType<typeof vi.fn>;
@@ -49,22 +49,22 @@ describe("seedPlans", () => {
   it("creates the free plan with correct rates", async () => {
     await seedPlans();
     const freePlanCall = mockDb.plan.upsert.mock.calls.find(
-      (c: [{ where: { id: string } }]) => c[0].where.id === "free"
+      (c) => c[0].where.id === "free"
     );
     expect(freePlanCall).toBeDefined();
-    expect(freePlanCall[0].create.commissionRate).toBe(0.05);
-    expect(freePlanCall[0].create.monthlyFreeQuota).toBe(30);
-    expect(freePlanCall[0].create.monthlyPriceCents).toBe(0);
+    expect(freePlanCall![0].create.commissionRate).toBe(0.05);
+    expect(freePlanCall![0].create.monthlyFreeQuota).toBe(30);
+    expect(freePlanCall![0].create.monthlyPriceCents).toBe(0);
   });
 
   it("creates the pro plan with correct rates", async () => {
     await seedPlans();
     const proPlanCall = mockDb.plan.upsert.mock.calls.find(
-      (c: [{ where: { id: string } }]) => c[0].where.id === "pro"
+      (c) => c[0].where.id === "pro"
     );
     expect(proPlanCall).toBeDefined();
-    expect(proPlanCall[0].create.commissionRate).toBe(0.025);
-    expect(proPlanCall[0].create.monthlyFreeQuota).toBe(150);
+    expect(proPlanCall![0].create.commissionRate).toBe(0.025);
+    expect(proPlanCall![0].create.monthlyFreeQuota).toBe(150);
   });
 });
 

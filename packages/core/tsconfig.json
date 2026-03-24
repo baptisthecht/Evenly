@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "module": "CommonJS",
+    "module": "esnext",
     "lib": ["ES2017", "dom"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "outDir": "dist",
     "declaration": true,
     "noImplicitAny": true

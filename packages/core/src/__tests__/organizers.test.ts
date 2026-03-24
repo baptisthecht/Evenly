@@ -38,7 +38,7 @@ vi.mock("@evoly/db", () => ({
 
 import { db, Permission } from "@evoly/db";
 
-const mockDb = db as {
+const mockDb = db as unknown as {
   organizationMember: {
     findUnique: ReturnType<typeof vi.fn>;
     findMany: ReturnType<typeof vi.fn>;

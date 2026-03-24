@@ -16,7 +16,7 @@ vi.mock("@evoly/db", () => ({
 
 import { db } from "@evoly/db";
 
-const mockDb = db as {
+const mockDb = db as unknown as {
   event: { findFirst: ReturnType<typeof vi.fn> };
 };
 

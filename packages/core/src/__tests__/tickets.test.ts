@@ -18,7 +18,7 @@ vi.mock("@evoly/db", () => ({
 
 import { db } from "@evoly/db";
 
-const mockDb = db as {
+const mockDb = db as unknown as {
   ticketType: {
     findUnique: ReturnType<typeof vi.fn>;
     update: ReturnType<typeof vi.fn>;

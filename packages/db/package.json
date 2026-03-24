@@ -10,7 +10,8 @@
     "migrate:dev": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
     "studio": "prisma studio",
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "ts-node prisma/seed.ts",
+    "type-check": "tsc --noEmit"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
