@@ -20,9 +20,9 @@ export default withSentryConfig(nextConfig, {
   // Suppress build output noise when Sentry is not configured
   silent: true,
   // Hide source maps from the client bundle
-  hideSourceMaps: true,
-  // Disable verbose Sentry logger in production
-  disableLogger: true,
+  sourcemaps: {
+    disable: true,
+  },
   // Don't auto-instrument Vercel Cron Monitors (we use our own cron setup)
   automaticVercelMonitors: false,
 });

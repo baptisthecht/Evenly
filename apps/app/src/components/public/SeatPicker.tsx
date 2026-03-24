@@ -155,7 +155,7 @@ export function SeatPicker({
                       if (isSelectedByThisType) {
                         style = { backgroundColor: cat.color, color: "white" };
                         className += "ring-2 ring-offset-1 cursor-pointer";
-                        style.ringColor = cat.color;
+                        (style as React.CSSProperties & Record<string, string>)["--tw-ring-color"] = cat.color;
                       } else if (!isAvailable || isSelected) {
                         // Unavailable or selected by another type
                         className += "cursor-not-allowed ";

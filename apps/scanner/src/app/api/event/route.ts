@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
   });
 
   const total = tickets.length;
-  const checkedIn = tickets.filter((t) => t.checkedIn).length;
+  const checkedIn = tickets.filter((t: (typeof tickets)[number]) => t.checkedIn).length;
 
   // Per ticket type breakdown
   const breakdown: Record<string, { name: string; total: number; checkedIn: number }> = {};
@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
       checkedIn,
       rate: total > 0 ? Math.round((checkedIn / total) * 100) : 0,
     },
-    recentCheckIns: recentCheckIns.map((t) => ({
+    recentCheckIns: recentCheckIns.map((t: (typeof recentCheckIns)[number]) => ({
       id: t.id,
       name: `${t.holderFirstName ?? ""} ${t.holderLastName ?? ""}`.trim() || "Anonyme",
       checkedInAt: t.checkedInAt?.toISOString(),
