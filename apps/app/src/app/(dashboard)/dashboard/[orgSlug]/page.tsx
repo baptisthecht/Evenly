@@ -137,12 +137,14 @@ export default async function DashboardHomePage({
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard
-          label="Revenus nets"
-          value={`${(revenue / 100).toFixed(2)}€`}
-          change={revenueChange}
-        />
+      <div className="grid grid-cols-3 gap-4">
+        <div className="col-span-3">
+          <KpiCard
+            label="Revenus nets"
+            value={`${(revenue / 100).toFixed(2)}€`}
+            change={revenueChange}
+          />
+        </div>
         <KpiCard
           label="Tickets vendus"
           value={ticketsSold.toString()}
