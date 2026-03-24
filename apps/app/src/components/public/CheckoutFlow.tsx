@@ -4,6 +4,7 @@ import { useState, useTransition, useEffect, useRef } from "react";
 import { loadStripe, type Stripe, type StripeElements } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements, ExpressCheckoutElement } from "@stripe/react-stripe-js";
 import { validatePromoCodeAction, createFreeOrderAction, createPaymentIntentAction } from "@/actions/checkout";
+import { SeatPicker, type SeatingMapData } from "./SeatPicker";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -15,10 +16,12 @@ interface TicketType {
   maxPerOrder: number; minPerOrder: number;
   isNominative: boolean;
   saleStartsAt: string | null; saleEndsAt: string | null;
+  seatingCategoryId: string | null;
 }
 interface EventData {
   id: string; title: string;
   primaryColor?: string | null;
+  allowSeatChoice?: boolean;
   organization: { stripeAccountStatus: string };
   ticketTypes: TicketType[];
 }
@@ -30,6 +33,7 @@ interface HolderData { [ticketTypeId: string]: Array<{ firstName: string; lastNa
 
 export function CheckoutFlow({
   event, quantities, onQuantityChange, onBack, onSuccess, primaryColor: brandPrimary,
+  seatingMap,
 }: {
   event: EventData;
   quantities: Record<string, number>;
@@ -37,6 +41,7 @@ export function CheckoutFlow({
   onBack: () => void;
   onSuccess: (orderId: string, magicToken: string) => void;
   primaryColor?: string;
+  seatingMap?: SeatingMapData | null;
 }) {
   const primaryColor = brandPrimary ?? event.primaryColor ?? "#7c3aed";
   const now = new Date();
@@ -52,6 +57,36 @@ export function CheckoutFlow({
     .map((tt) => ({ ticketTypeId: tt.id, quantity: quantities[tt.id]!, ticketType: tt }));
   const totalItems = cartItems.reduce((a, i) => a + i.quantity, 0);
 
+  // ── Seat selection state ──
+  const needsSeatPicker = !!(
+    event.allowSeatChoice &&
+    seatingMap &&
+    cartItems.some((i) => i.ticketType.seatingCategoryId)
+  );
+
+  // Required seats per ticket type
+  const requiredByType: Record<string, number> = {};
+  for (const item of cartItems) {
+    if (item.ticketType.seatingCategoryId) {
+      requiredByType[item.ticketTypeId] = item.quantity;
+    }
+  }
+
+  const [selectedSeatsByType, setSelectedSeatsByType] = useState<Record<string, string[]>>({});
+  const [seatStepDone, setSeatStepDone] = useState(false);
+
+  // When cart changes, reset seat selection if needed
+  useEffect(() => {
+    setSelectedSeatsByType({});
+    setSeatStepDone(false);
+  }, [JSON.stringify(quantities)]);
+
+  // Seat selection complete?
+  const totalRequired = Object.values(requiredByType).reduce((a, b) => a + b, 0);
+  const totalSeatsSelected = Object.values(selectedSeatsByType).reduce((a, b) => a + b.length, 0);
+  const seatsComplete = totalSeatsSelected === totalRequired;
+
+  // ── Buyer info state ──
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -64,7 +99,7 @@ export function CheckoutFlow({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  // Stripe state — clientSecret chargé dès que le total change
+  // Stripe state
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [loadingPI, setLoadingPI] = useState(false);
@@ -84,24 +119,21 @@ export function CheckoutFlow({
   const isFreeOrder = discountedSubtotal === 0;
   const commissionRate = 0.05;
   const estimatedFees = isFreeOrder ? 0 : Math.round(discountedSubtotal * commissionRate);
-  const total = discountedSubtotal; // Commission prélevée côté organisateur via Stripe, pas ajoutée au total acheteur
+  const total = discountedSubtotal;
 
   const hasNominative = cartItems.some((i) => i.ticketType.isNominative);
-  // Affiche la section dès qu'il y a un @
   const buyerInfoFilled = firstName.trim() && lastName.trim() && email.trim() && email.includes("@");
-  const showPaymentSection = totalItems > 0 && buyerInfoFilled;
-
-  // Email valide = a un @ et un . après le @
   const emailValid = /^[^@]+@[^@]+\.[^@]{2,}$/.test(email.trim());
-  // Déclenche le PI seulement quand tout est vraiment complet
   const buyerInfoComplete = !!(firstName.trim() && lastName.trim() && emailValid);
 
-  // Créer le PaymentIntent UNE SEULE FOIS quand les infos sont complètes.
-  // On ne recrée jamais tant que clientSecret est déjà set — Elements doit rester monté.
+  // Only show buyer info after seat step (if applicable)
+  const showBuyerSection = totalItems > 0 && (!needsSeatPicker || seatStepDone);
+  const showPaymentSection = showBuyerSection && buyerInfoFilled;
+
   const piCreating = useRef(false);
   useEffect(() => {
     if (!buyerInfoComplete || !showPaymentSection || isFreeOrder) return;
-    if (clientSecret) return; // déjà créé, ne pas remonter Elements
+    if (clientSecret) return;
     if (piCreating.current) return;
     piCreating.current = true;
     setLoadingPI(true);
@@ -117,17 +149,13 @@ export function CheckoutFlow({
         ticketTypeId: item.ticketTypeId,
         quantity: item.quantity,
         holderData: item.ticketType.isNominative ? (holderData[item.ticketTypeId] ?? []) : undefined,
+        seatIds: selectedSeatsByType[item.ticketTypeId] ?? [],
       })),
     };
-    console.log("[PI payload]", JSON.stringify(payload, null, 2));
     createPaymentIntentAction(payload).then((result) => {
       setLoadingPI(false);
       piCreating.current = false;
-      console.log("[PI result]", result);
-      if ("error" in result && result.error) {
-        setError(result.error as string);
-        return;
-      }
+      if ("error" in result && result.error) { setError(result.error as string); return; }
       if (result.clientSecret && result.orderId) {
         setClientSecret(result.clientSecret);
         setOrderId(result.orderId);
@@ -138,7 +166,6 @@ export function CheckoutFlow({
       console.error("[PI error]", err);
       setError("Erreur lors de la préparation du paiement.");
     });
-  // Déclenché quand buyerInfoComplete passe à true (email complet avec domaine)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buyerInfoComplete, showPaymentSection]);
 
@@ -170,12 +197,18 @@ export function CheckoutFlow({
         items: cartItems.map((item) => ({
           ticketTypeId: item.ticketTypeId, quantity: item.quantity,
           holderData: item.ticketType.isNominative ? (holderData[item.ticketTypeId] ?? []) : undefined,
+          seatIds: selectedSeatsByType[item.ticketTypeId] ?? [],
         })),
       });
       if (result.error) { setError(result.error); return; }
       if (result.orderId && result.magicToken) onSuccess(result.orderId, result.magicToken);
     });
   }
+
+  // Determine section numbers based on whether seat picker is shown
+  const seatSectionNum = 2;
+  const buyerSectionNum = needsSeatPicker ? 3 : 2;
+  const paymentSectionNum = needsSeatPicker ? 4 : 3;
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
@@ -248,10 +281,65 @@ export function CheckoutFlow({
           )}
         </div>
 
-        {/* ── Section 2 : Coordonnées ── */}
-        {totalItems > 0 && (
+        {/* ── Section 2 : Choix des sièges (if applicable) ── */}
+        {needsSeatPicker && totalItems > 0 && seatingMap && (
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-800">2. Vos coordonnées</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-800">{seatSectionNum}. Choisissez vos sièges</h3>
+              {seatStepDone && (
+                <button
+                  type="button"
+                  onClick={() => setSeatStepDone(false)}
+                  className="text-xs text-violet-600 hover:underline"
+                >
+                  Modifier
+                </button>
+              )}
+            </div>
+
+            {seatStepDone ? (
+              <div className="bg-violet-50 rounded-xl p-3 space-y-1">
+                {Object.entries(selectedSeatsByType).map(([ttId, seatIds]) => {
+                  const tt = cartItems.find((i) => i.ticketTypeId === ttId)?.ticketType;
+                  if (!tt || seatIds.length === 0) return null;
+                  // Find seat labels from the map
+                  const allSeats = seatingMap.rows.flatMap((r) => r.seats);
+                  const labels = seatIds.map((id) => allSeats.find((s) => s.id === id)?.label ?? id);
+                  return (
+                    <p key={ttId} className="text-xs text-violet-800">
+                      <span className="font-medium">{tt.name}:</span>{" "}
+                      {labels.join(", ")}
+                    </p>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <SeatPicker
+                  seatingMap={seatingMap}
+                  requiredByType={requiredByType}
+                  selectedByType={selectedSeatsByType}
+                  onChange={setSelectedSeatsByType}
+                  primaryColor={primaryColor}
+                />
+                <button
+                  type="button"
+                  disabled={!seatsComplete}
+                  onClick={() => setSeatStepDone(true)}
+                  className="w-full py-2.5 disabled:opacity-40 text-white text-sm font-semibold rounded-xl transition-colors"
+                  style={{ backgroundColor: seatsComplete ? primaryColor : undefined }}
+                >
+                  Confirmer la sélection
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Section 2/3 : Coordonnées ── */}
+        {showBuyerSection && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-gray-800">{buyerSectionNum}. Vos coordonnées</h3>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Prénom" required>
                 <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} className={inputCls} placeholder="Jean" />
@@ -296,9 +384,10 @@ export function CheckoutFlow({
           </div>
         )}
 
-        {/* ── Section 3 : Récap + paiement ── */}
+        {/* ── Section 3/4 : Récap + paiement ── */}
         {showPaymentSection && (
           <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-gray-800">{paymentSectionNum}. Paiement</h3>
             {/* Récap prix */}
             <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
               {subtotal !== discountedSubtotal && (
@@ -337,14 +426,8 @@ export function CheckoutFlow({
                 <StripeForm clientSecret={clientSecret} orderId={orderId} total={total} primaryColor={primaryColor} />
               </Elements>
             ) : (
-              <div className="space-y-2">
-                <div className="w-full py-3 bg-violet-200 rounded-xl flex items-center justify-center gap-2 text-violet-500 text-sm">
-                  <Spinner /> Préparation du paiement…
-                </div>
-                {/* DEBUG — retire en prod */}
-                <p className="text-xs text-gray-400 text-center">
-                  loadingPI={loadingPI ? "true" : "false"} | clientSecret={clientSecret ? "ok" : "null"} | orderId={orderId ?? "null"}
-                </p>
+              <div className="w-full py-3 bg-violet-200 rounded-xl flex items-center justify-center gap-2 text-violet-500 text-sm">
+                <Spinner /> Préparation du paiement…
               </div>
             )}
           </div>
@@ -367,7 +450,6 @@ function StripeForm({ clientSecret, orderId, total, primaryColor }: {
   const elements = useElements();
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
-  // ready = PaymentElement a fini de se monter
   const [ready, setReady] = useState(false);
   const appUrl = typeof window !== "undefined"
     ? window.location.origin
@@ -383,19 +465,14 @@ function StripeForm({ clientSecret, orderId, total, primaryColor }: {
       confirmParams: { return_url: `${appUrl}/confirmation/${orderId}` },
     });
     if (confirmError) { setError(confirmError.message ?? "Paiement refusé."); setProcessing(false); }
-    // Si pas d'erreur → Stripe redirige vers return_url, pas besoin de setProcessing(false)
   }
 
   return (
     <div className="space-y-3">
       {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700" role="alert">{error}</div>}
 
-      {/* Express checkout (Apple Pay / Google Pay) — affiché seulement si dispo sur l'appareil */}
       <ExpressCheckoutElement
-        onReady={() => {
-          // onReady fire toujours — le bouton est caché par Stripe lui-même si indispo
-          // Ne PAS conditionner setReady ici car PaymentElement s'en charge
-        }}
+        onReady={() => {}}
         onConfirm={async () => {
           if (!stripe || !elements) return;
           const { error } = await stripe.confirmPayment({
@@ -414,21 +491,9 @@ function StripeForm({ clientSecret, orderId, total, primaryColor }: {
       </div>
 
       <PaymentElement
-        onReady={() => {
-          console.log("[Stripe] PaymentElement onReady fired");
-          setReady(true);
-        }}
-        onChange={(e) => {
-          console.log("[Stripe] PaymentElement onChange", e.complete, e.empty);
-        }}
+        onReady={() => setReady(true)}
         options={{ layout: "tabs" }}
       />
-      {/* DEBUG — à retirer en prod */}
-      {process.env.NODE_ENV === "development" && (
-        <p className="text-xs text-gray-400">
-          stripe={stripe ? "✓" : "✗"} elements={elements ? "✓" : "✗"} ready={ready ? "✓" : "✗"}
-        </p>
-      )}
 
       <button type="button" onClick={handlePay}
         disabled={processing || !ready}

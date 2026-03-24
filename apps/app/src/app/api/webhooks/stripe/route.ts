@@ -118,9 +118,11 @@ export async function POST(req: NextRequest) {
             data: { status: "COMPLETED" },
           });
 
-          // Create tickets
+          // Create tickets (with seat assignment if applicable)
           for (const item of order.items) {
+            const seatIds: string[] = (item.customFields as { seatIds?: string[] } | null)?.seatIds ?? [];
             for (let i = 0; i < item.quantity; i++) {
+              const seatId = seatIds[i] ?? null;
               await tx.ticket.create({
                 data: {
                   orderId: order.id,
@@ -130,8 +132,12 @@ export async function POST(req: NextRequest) {
                   holderLastName: order.buyerLastName,
                   holderEmail: order.buyerEmail,
                   status: "ACTIVE",
+                  seatId,
                 },
               });
+              if (seatId) {
+                await tx.seat.update({ where: { id: seatId }, data: { status: "SOLD" } });
+              }
             }
             await tx.ticketType.update({
               where: { id: item.ticketTypeId },
@@ -256,10 +262,27 @@ export async function POST(req: NextRequest) {
 
       case "payment_intent.payment_failed": {
         const pi = event.data.object as any;
-        await db.order.updateMany({
+        const failedOrder = await db.order.findFirst({
           where: { stripePaymentIntentId: pi.id },
-          data: { status: "CANCELLED" },
+          include: { items: true },
         });
+        if (failedOrder) {
+          const reservedSeatIds = failedOrder.items.flatMap(
+            (item) => (item.customFields as { seatIds?: string[] } | null)?.seatIds ?? []
+          );
+          await db.$transaction(async (tx) => {
+            await tx.order.update({
+              where: { id: failedOrder.id },
+              data: { status: "CANCELLED" },
+            });
+            if (reservedSeatIds.length > 0) {
+              await tx.seat.updateMany({
+                where: { id: { in: reservedSeatIds }, status: "RESERVED" },
+                data: { status: "AVAILABLE" },
+              });
+            }
+          });
+        }
         break;
       }
 

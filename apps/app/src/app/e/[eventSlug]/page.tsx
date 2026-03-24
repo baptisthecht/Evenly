@@ -2,6 +2,7 @@ import { db } from "@evoly/db";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { EventPublicPage } from "@/components/public/EventPublicPage";
+import { getPublicSeatingMapAction } from "@/actions/seating";
 
 interface Props {
 	params: Promise<{ eventSlug: string }>;
@@ -27,17 +28,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 async function getEvent(slug: string) {
 	return db.event.findFirst({
-		where: {
-			slug,
-			status: "PUBLISHED",
-		},
-		include: {
+		where: { slug, status: "PUBLISHED" },
+		select: {
+			id: true, title: true, description: true, bannerUrl: true,
+			startsAt: true, endsAt: true, timezone: true,
+			locationType: true, locationName: true, locationAddress: true,
+			refundPolicy: true, refundDeadlineDays: true, confirmationMessage: true,
+			slug: true, status: true, organizationId: true,
+			seatingType: true, allowSeatChoice: true,
 			organization: {
 				select: {
-					id: true,
-					name: true,
-					slug: true,
-					logoUrl: true,
+					id: true, name: true, slug: true, logoUrl: true,
 					stripeAccountStatus: true,
 					brand: { select: { brandName: true, logoUrl: true, primaryColor: true, accentColor: true, fromName: true } },
 				},
@@ -45,6 +46,12 @@ async function getEvent(slug: string) {
 			ticketTypes: {
 				where: { status: "ACTIVE" },
 				orderBy: { sortOrder: "asc" },
+				select: {
+					id: true, name: true, description: true, priceCents: true, currency: true,
+					quantity: true, quantitySold: true, maxPerOrder: true, minPerOrder: true,
+					isNominative: true, saleStartsAt: true, saleEndsAt: true,
+					seatingCategoryId: true,
+				},
 			},
 		},
 	});
@@ -55,6 +62,11 @@ export default async function PublicEventPage({ params }: Props) {
 	const event = await getEvent(eventSlug);
 
 	if (!event) notFound();
+
+	// Fetch seating map if event uses assigned seating with buyer seat choice
+	const seatingMap = event.seatingType === "ASSIGNED" && event.allowSeatChoice
+		? await getPublicSeatingMapAction(event.id)
+		: null;
 
 	// Get other events from same org
 	const otherEvents = await db.event.findMany({
@@ -67,11 +79,7 @@ export default async function PublicEventPage({ params }: Props) {
 		orderBy: { startsAt: "asc" },
 		take: 3,
 		select: {
-			id: true,
-			title: true,
-			slug: true,
-			startsAt: true,
-			bannerUrl: true,
+			id: true, title: true, slug: true, startsAt: true, bannerUrl: true,
 		},
 	});
 
@@ -100,9 +108,7 @@ export default async function PublicEventPage({ params }: Props) {
 					},
 				}
 			: event.locationType === "ONLINE"
-				? {
-						location: { "@type": "VirtualLocation", url: appUrl },
-					}
+				? { location: { "@type": "VirtualLocation", url: appUrl } }
 				: {}),
 		offers: event.ticketTypes.map((tt) => ({
 			"@type": "Offer",
@@ -138,6 +144,7 @@ export default async function PublicEventPage({ params }: Props) {
 					refundPolicy: event.refundPolicy,
 					refundDeadlineDays: event.refundDeadlineDays,
 					confirmationMessage: event.confirmationMessage,
+					allowSeatChoice: event.allowSeatChoice,
 					organization: event.organization,
 					ticketTypes: event.ticketTypes.map((tt) => ({
 						id: tt.id,
@@ -152,6 +159,7 @@ export default async function PublicEventPage({ params }: Props) {
 						isNominative: tt.isNominative,
 						saleStartsAt: tt.saleStartsAt?.toISOString() ?? null,
 						saleEndsAt: tt.saleEndsAt?.toISOString() ?? null,
+						seatingCategoryId: tt.seatingCategoryId,
 					})),
 				}}
 				otherEvents={otherEvents.map((e) => ({
@@ -161,6 +169,7 @@ export default async function PublicEventPage({ params }: Props) {
 					startsAt: e.startsAt.toISOString(),
 					bannerUrl: e.bannerUrl,
 				}))}
+				seatingMap={seatingMap}
 			/>
 		</>
 	);

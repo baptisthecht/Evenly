@@ -4,6 +4,54 @@ import { db } from "@evoly/db";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
+// ── Public: fetch available seats for buyer seat picker ────────────────────────
+
+export async function getPublicSeatingMapAction(eventId: string) {
+  const event = await db.event.findUnique({
+    where: { id: eventId, status: "PUBLISHED" },
+    select: {
+      allowSeatChoice: true,
+      seatingType: true,
+      seatingMap: {
+        include: {
+          categories: true,
+          rows: {
+            include: { seats: { orderBy: [{ label: "asc" }] } },
+            orderBy: { sortOrder: "asc" },
+          },
+        },
+      },
+    },
+  });
+
+  if (!event || event.seatingType !== "ASSIGNED" || !event.allowSeatChoice) {
+    return null;
+  }
+
+  if (!event.seatingMap) return null;
+
+  return {
+    id: event.seatingMap.id,
+    categories: event.seatingMap.categories.map((c) => ({
+      id: c.id,
+      name: c.name,
+      color: c.color,
+      ticketTypeId: c.ticketTypeId,
+    })),
+    rows: event.seatingMap.rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      categoryId: r.categoryId,
+      seats: r.seats.map((s) => ({
+        id: s.id,
+        label: s.label,
+        status: s.status as "AVAILABLE" | "RESERVED" | "SOLD" | "BLOCKED",
+        categoryId: s.categoryId,
+      })),
+    })),
+  };
+}
+
 export async function createSeatingMapAction(eventId: string) {
   const session = await auth();
   if (!session?.user) return { error: "Non authentifié." };

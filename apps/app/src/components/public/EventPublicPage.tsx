@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CheckoutFlow } from "./CheckoutFlow";
+import type { SeatingMapData } from "./SeatPicker";
 
 interface TicketType {
   id: string;
@@ -16,6 +17,7 @@ interface TicketType {
   isNominative: boolean;
   saleStartsAt: string | null;
   saleEndsAt: string | null;
+  seatingCategoryId: string | null;
 }
 
 interface EventData {
@@ -32,6 +34,7 @@ interface EventData {
   refundPolicy: string;
   refundDeadlineDays: number | null;
   confirmationMessage: string | null;
+  allowSeatChoice?: boolean;
   organization: {
     id: string;
     name: string;
@@ -52,9 +55,10 @@ interface EventData {
 interface Props {
   event: EventData;
   otherEvents: { id: string; title: string; slug: string; startsAt: string; bannerUrl: string | null }[];
+  seatingMap?: SeatingMapData | null;
 }
 
-export function EventPublicPage({ event, otherEvents }: Props) {
+export function EventPublicPage({ event, otherEvents, seatingMap }: Props) {
   const [orderComplete, setOrderComplete] = useState<{ orderId: string; magicToken: string } | null>(null);
   // Shared quantities state — lives here so CheckoutFlow receives what TicketSelector set
   const [quantities, setQuantities] = useState<Record<string, number>>({});
@@ -216,6 +220,7 @@ export function EventPublicPage({ event, otherEvents }: Props) {
                 onQuantityChange={setQuantities}
                 onBack={() => {}}
                 onSuccess={(orderId, magicToken) => setOrderComplete({ orderId, magicToken })}
+                seatingMap={seatingMap}
               />
             </div>
           </div>

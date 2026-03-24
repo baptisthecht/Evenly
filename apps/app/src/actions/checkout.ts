@@ -60,6 +60,7 @@ const checkoutSchema = z.object({
 					}),
 				)
 				.optional(),
+			seatIds: z.array(z.string()).optional(),
 		}),
 	),
 });
@@ -98,12 +99,28 @@ export async function createFreeOrderAction(data: unknown) {
 		if (tt.quantity !== null && tt.quantitySold + item.quantity > tt.quantity) {
 			return { error: `Plus assez de places disponibles pour "${tt.name}".` };
 		}
+		// Validate seat count matches quantity if seats provided
+		if (item.seatIds && item.seatIds.length > 0 && item.seatIds.length !== item.quantity) {
+			return { error: "Le nombre de sièges sélectionnés ne correspond pas à la quantité de billets." };
+		}
+	}
+
+	// Validate seats are still available (if applicable)
+	const allSeatIds = items.flatMap((i) => i.seatIds ?? []);
+	if (allSeatIds.length > 0) {
+		const seats = await db.seat.findMany({
+			where: { id: { in: allSeatIds } },
+			select: { id: true, status: true, label: true },
+		});
+		for (const seat of seats) {
+			if (seat.status !== "AVAILABLE") {
+				return { error: `Le siège ${seat.label} n'est plus disponible.` };
+			}
+		}
 	}
 
 	// Create order + tickets in transaction
 	const order = await db.$transaction(async (tx) => {
-		const totalQuantity = items.reduce((acc, i) => acc + i.quantity, 0);
-
 		const newOrder = await tx.order.create({
 			data: {
 				eventId,
@@ -122,27 +139,35 @@ export async function createFreeOrderAction(data: unknown) {
 						ticketTypeId: item.ticketTypeId,
 						quantity: item.quantity,
 						unitPriceCents: 0,
+						customFields: item.seatIds && item.seatIds.length > 0
+							? { seatIds: item.seatIds }
+							: undefined,
 					})),
 				},
 			},
 		});
 
-		// Create tickets
+		// Create tickets, mark seats as SOLD
 		for (const item of items) {
 			const tt = event.ticketTypes.find((t) => t.id === item.ticketTypeId)!;
 			for (let i = 0; i < item.quantity; i++) {
 				const holder = item.holderData?.[i];
+				const seatId = item.seatIds?.[i];
 				await tx.ticket.create({
 					data: {
 						orderId: newOrder.id,
-						orderItemId: newOrder.id, // simplified
+						orderItemId: newOrder.id,
 						qrCode: crypto.randomUUID(),
 						holderFirstName: holder?.firstName || buyerFirstName,
 						holderLastName: holder?.lastName || buyerLastName,
 						holderEmail: holder?.email || buyerEmail,
 						status: "ACTIVE",
+						seatId: seatId ?? null,
 					},
 				});
+				if (seatId) {
+					await tx.seat.update({ where: { id: seatId }, data: { status: "SOLD" } });
+				}
 			}
 
 			// Decrement stock
@@ -204,51 +229,6 @@ export async function createFreeOrderAction(data: unknown) {
 	return { success: true, orderId: order.id, magicToken: order.magicToken };
 }
 
-async function sendOrderConfirmationEmail(
-	orderId: string,
-	buyerEmail: string,
-	buyerName: string,
-	eventTitle: string,
-	eventStartsAt: Date,
-	locationName: string | null,
-	ticketCount: number,
-	totalCents: number,
-	magicToken: string,
-	confirmationMessage: string | null,
-) {
-	try {
-		const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.evoly.me";
-		const html = await render(
-			OrderConfirmationEmail({
-				buyerName,
-				eventTitle,
-				eventDate: eventStartsAt.toLocaleDateString("fr-FR", {
-					weekday: "long",
-					day: "numeric",
-					month: "long",
-					year: "numeric",
-					hour: "2-digit",
-					minute: "2-digit",
-				}),
-				eventLocation: locationName,
-				ticketCount,
-				totalCents,
-				magicToken,
-				appUrl,
-				confirmationMessage,
-			}),
-		);
-		await resend.emails.send({
-			from: "Evoly <noreply@evoly.me>",
-			to: buyerEmail,
-			subject: `🎟️ Vos billets pour ${eventTitle}`,
-			html,
-		});
-	} catch (err) {
-		console.error("[Confirmation email]", err);
-	}
-}
-
 // ─────────────────────────────────────────
 // CREATE PAYMENT INTENT (paid tickets)
 // ─────────────────────────────────────────
@@ -257,6 +237,7 @@ export async function createPaymentIntentAction(data: unknown) {
 	try { return await _createPaymentIntentAction(data); }
 	catch (e) { console.error("[createPaymentIntentAction] CRASH:", e); return { error: String(e) }; }
 }
+
 async function _createPaymentIntentAction(data: unknown) {
 	const parsed = checkoutSchema.safeParse(data);
 	if (!parsed.success) {
@@ -296,6 +277,20 @@ async function _createPaymentIntentAction(data: unknown) {
 		event.organization.stripeAccountStatus !== "ACTIVE"
 	) {
 		return { error: "Paiement non disponible pour cet événement." };
+	}
+
+	// Validate seats if provided
+	const allSeatIds = items.flatMap((i) => i.seatIds ?? []);
+	if (allSeatIds.length > 0) {
+		const seats = await db.seat.findMany({
+			where: { id: { in: allSeatIds } },
+			select: { id: true, status: true, label: true },
+		});
+		for (const seat of seats) {
+			if (seat.status !== "AVAILABLE") {
+				return { error: `Le siège ${seat.label} n'est plus disponible.` };
+			}
+		}
 	}
 
 	// Calculate totals
@@ -347,31 +342,46 @@ async function _createPaymentIntentAction(data: unknown) {
 
 	const total = discountedTotal;
 
-	// Create pending order
-	const order = await db.order.create({
-		data: {
-			eventId,
-			buyerEmail,
-			buyerFirstName,
-			buyerLastName,
-			buyerPhone: buyerPhone || null,
-			subtotalCents: subtotal,
-			discountCents: discount,
-			feesCents: fees,
-			totalCents: total,
-			promoCodeId: promoCodeId || null,
-			status: "PENDING",
-			items: {
-				create: items.map((item) => {
-					const tt = event.ticketTypes.find((t) => t.id === item.ticketTypeId)!;
-					return {
-						ticketTypeId: item.ticketTypeId,
-						quantity: item.quantity,
-						unitPriceCents: tt.priceCents,
-					};
-				}),
+	// Create pending order + reserve seats atomically
+	const order = await db.$transaction(async (tx) => {
+		// Reserve seats
+		if (allSeatIds.length > 0) {
+			await tx.seat.updateMany({
+				where: { id: { in: allSeatIds }, status: "AVAILABLE" },
+				data: { status: "RESERVED" },
+			});
+		}
+
+		const newOrder = await tx.order.create({
+			data: {
+				eventId,
+				buyerEmail,
+				buyerFirstName,
+				buyerLastName,
+				buyerPhone: buyerPhone || null,
+				subtotalCents: subtotal,
+				discountCents: discount,
+				feesCents: fees,
+				totalCents: total,
+				promoCodeId: promoCodeId || null,
+				status: "PENDING",
+				items: {
+					create: items.map((item) => {
+						const tt = event.ticketTypes.find((t) => t.id === item.ticketTypeId)!;
+						return {
+							ticketTypeId: item.ticketTypeId,
+							quantity: item.quantity,
+							unitPriceCents: tt.priceCents,
+							customFields: item.seatIds && item.seatIds.length > 0
+								? { seatIds: item.seatIds }
+								: undefined,
+						};
+					}),
+				},
 			},
-		},
+		});
+
+		return newOrder;
 	});
 
 	// Create Stripe PaymentIntent with application_fee_amount
